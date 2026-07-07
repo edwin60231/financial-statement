@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
+<!-- 提前套用主題設定，避免翻轉閃爍 -->
+<script>
+(function(){
+  try{
+    var pref = localStorage.getItem('theme_pref') || 'system';
+    var effective = pref;
+    if(pref === 'system'){
+      effective = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    document.documentElement.setAttribute('data-theme', effective);
+  }catch(e){}
+})();
+</script>
 <!-- 使用自己上傳的圖片當作網站 Icon -->
 <link rel="icon" type="image/png" href="icon.png">
 <meta charset="UTF-8">
@@ -31,23 +44,38 @@
   --red:#E8556A; --red-soft:rgba(232,85,106,0.15);
   --radius:16px; --radius-sm:10px;
   --food:#EC6FA0; --fun:#5B8DEF; --fixed:#8C90A6; --misc:#5B6272;
+  /* 毛玻璃材質（深色） */
+  --glass:rgba(21,24,34,0.68); --glass-2:rgba(29,33,48,0.6); --glass-bar:rgba(11,13,18,0.55);
+  --toast-glass:rgba(242,243,246,0.92);
+  --wallpaper:
+    radial-gradient(at 15% -10%, rgba(91,141,239,0.38) 0, transparent 55%),
+    radial-gradient(at 85% 0%, rgba(236,111,160,0.32) 0, transparent 55%),
+    radial-gradient(at 50% 100%, rgba(52,199,123,0.16) 0, transparent 60%),
+    #0B0D12;
 }
-@media (prefers-color-scheme: light){
-  :root{
-    --bg:#F5F6FA; --surface:#FFFFFF; --surface-2:#F0F1F6; --border:rgba(15,17,20,0.08);
-    --text:#171921; --text-2:#5B6472; --text-3:#8A93A3;
-    --blue:#3E71D6; --blue-soft:rgba(62,113,214,0.10);
-    --pink:#D6488B; --pink-soft:rgba(214,72,139,0.10);
-    --green:#1F9A5E; --green-soft:rgba(31,154,94,0.10);
-    --amber:#C57F17; --amber-soft:rgba(197,127,23,0.10);
-    --red:#D0364E; --red-soft:rgba(208,54,78,0.10);
-    --food:#D6488B; --fun:#3E71D6; --fixed:#7A7F92; --misc:#9CA1B0;
-  }
+:root[data-theme="light"]{
+  --bg:#F5F6FA; --surface:#FFFFFF; --surface-2:#F0F1F6; --border:rgba(15,17,20,0.08);
+  --text:#171921; --text-2:#5B6472; --text-3:#8A93A3;
+  --blue:#3E71D6; --blue-soft:rgba(62,113,214,0.10);
+  --pink:#D6488B; --pink-soft:rgba(214,72,139,0.10);
+  --green:#1F9A5E; --green-soft:rgba(31,154,94,0.10);
+  --amber:#C57F17; --amber-soft:rgba(197,127,23,0.10);
+  --red:#D0364E; --red-soft:rgba(208,54,78,0.10);
+  --food:#D6488B; --fun:#3E71D6; --fixed:#7A7F92; --misc:#9CA1B0;
+  /* 毛玻璃材質（淺色） */
+  --glass:rgba(255,255,255,0.68); --glass-2:rgba(240,241,246,0.62); --glass-bar:rgba(245,246,250,0.6);
+  --toast-glass:rgba(23,25,33,0.9);
+  --wallpaper:
+    radial-gradient(at 15% -10%, rgba(62,113,214,0.20) 0, transparent 55%),
+    radial-gradient(at 85% 0%, rgba(214,72,139,0.16) 0, transparent 55%),
+    radial-gradient(at 50% 100%, rgba(31,154,94,0.12) 0, transparent 60%),
+    #F5F6FA;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{
-  background:var(--bg); color:var(--text); font-family:'Inter',sans-serif;
+  background:var(--wallpaper); background-attachment:fixed; background-size:cover;
+  color:var(--text); font-family:'Inter',sans-serif;
   -webkit-font-smoothing:antialiased; min-height:100vh; padding-bottom:88px;
 }
 h1,h2,h3,.num-lg{font-family:'Sora',sans-serif;}
@@ -56,7 +84,8 @@ button,input,select{font-family:inherit; color:inherit;}
 
 /* 金鑰設定面板樣式 */
 .config-panel {
-  background: var(--surface-2); padding: 16px; border-bottom: 1px solid var(--border);
+  background: var(--glass-2); backdrop-filter:blur(20px) saturate(160%); -webkit-backdrop-filter:blur(20px) saturate(160%);
+  padding: 16px; border-bottom: 1px solid var(--border);
   font-size: 13px; display: flex; flex-direction: column; gap: 10px; max-width: 520px; margin: 0 auto;
   border-radius: var(--radius-sm); margin-top: 10px;
 }
@@ -66,20 +95,23 @@ button,input,select{font-family:inherit; color:inherit;}
 }
 
 .app-bar{
-  position:sticky; top:0; z-index:20; background:var(--bg);
+  position:sticky; top:0; z-index:20; background:var(--glass-bar);
+  backdrop-filter:blur(24px) saturate(160%); -webkit-backdrop-filter:blur(24px) saturate(160%);
   padding:18px 18px 10px; display:flex; align-items:center; justify-content:space-between;
 }
 .app-bar h1{font-size:20px; font-weight:600; margin:0;}
 .app-bar .sub{font-size:12px; color:var(--text-3); margin-top:2px;}
 .icon-btn{
   width:38px;height:38px;border-radius:50%;border:0.5px solid var(--border);
-  background:var(--surface); display:flex;align-items:center;justify-content:center;
+  background:var(--glass-2); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  display:flex;align-items:center;justify-content:center;
   cursor:pointer; color:var(--text-2); flex-shrink:0;
 }
 .view{display:none; padding:6px 16px 24px; max-width:520px; margin:0 auto;}
 .view.active{display:block;}
 .card{
-  background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius);
+  background:var(--glass); backdrop-filter:blur(20px) saturate(160%); -webkit-backdrop-filter:blur(20px) saturate(160%);
+  border:0.5px solid var(--border); border-radius:var(--radius);
   padding:18px; margin-bottom:14px;
 }
 .card-title{font-size:13px; color:var(--text-2); font-weight:500; margin:0 0 12px; display:flex; align-items:center; justify-content:space-between;}
@@ -171,7 +203,9 @@ button,input,select{font-family:inherit; color:inherit;}
   box-shadow:0 8px 24px rgba(0,0,0,0.35); z-index:30; display:none;
 }
 .bottom-nav{
-  position:fixed; bottom:0; left:0; right:0; background:var(--bg); border-top:0.5px solid var(--border);
+  position:fixed; bottom:0; left:0; right:0; background:var(--glass-bar);
+  backdrop-filter:blur(24px) saturate(160%); -webkit-backdrop-filter:blur(24px) saturate(160%);
+  border-top:0.5px solid var(--border);
   display:flex; padding:8px 0 max(8px,env(safe-area-inset-bottom)); z-index:25;
 }
 .nav-btn{
@@ -181,12 +215,15 @@ button,input,select{font-family:inherit; color:inherit;}
 .nav-btn.active{color:var(--text);}
 
 .modal-overlay{
-  position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:50; display:none;
+  position:fixed; inset:0; background:rgba(0,0,0,0.4); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+  z-index:50; display:none;
   align-items:flex-end; justify-content:center;
 }
 .modal-overlay.show{display:flex;}
 .modal-sheet{
-  width:100%; max-width:520px; background:var(--surface); border-radius:20px 20px 0 0;
+  width:100%; max-width:520px; background:var(--glass);
+  backdrop-filter:blur(28px) saturate(160%); -webkit-backdrop-filter:blur(28px) saturate(160%);
+  border-radius:20px 20px 0 0;
   padding:20px 20px calc(20px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto;
 }
 .modal-sheet h3{margin:0 0 16px; font-size:17px;}
@@ -219,7 +256,8 @@ button,input,select{font-family:inherit; color:inherit;}
 
 .snackbar{
   position:fixed; bottom:96px; left:16px; right:16px; max-width:488px; margin:0 auto;
-  background:var(--text); color:var(--bg); border-radius:var(--radius-sm); padding:13px 16px;
+  background:var(--toast-glass); backdrop-filter:blur(16px) saturate(160%); -webkit-backdrop-filter:blur(16px) saturate(160%);
+  color:var(--bg); border-radius:var(--radius-sm); padding:13px 16px;
   display:none; align-items:center; justify-content:space-between; font-size:13px; z-index:60;
 }
 .snackbar.show{display:flex;}
@@ -412,7 +450,29 @@ async function saveState(){
   } catch(e) {}
 }
 
-window.addEventListener('DOMContentLoaded', checkKeys);
+function getThemePref(){ return localStorage.getItem('theme_pref') || 'system'; }
+function getEffectiveTheme(){
+  const pref = getThemePref();
+  if(pref === 'system'){
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  return pref;
+}
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme', getEffectiveTheme());
+}
+function setThemePref(pref){
+  localStorage.setItem('theme_pref', pref);
+  applyTheme();
+  render();
+}
+if(window.matchMedia){
+  window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', function(){
+    if(getThemePref() === 'system') applyTheme();
+  });
+}
+
+window.addEventListener('DOMContentLoaded', function(){ applyTheme(); checkKeys(); });
 
 function monthSpend(m){ return (state.transactions || []).filter(t=>t.month===m).reduce((s,t)=>s+Number(t.amount||0),0); }
 function monthCatSpend(m,cat){ return (state.transactions || []).filter(t=>t.month===m && t.category===cat).reduce((s,t)=>s+Number(t.amount||0),0); }
@@ -581,6 +641,58 @@ function renderDashboard(){
   </div>`;
 }
 
+function renderCategoryPie(month){
+  const total = DASH_CATS.reduce((s,c)=>s+monthCatSpend(month,c),0);
+  const size = 150, r = size/2, cx = r, cy = r;
+  const nonZeroCats = DASH_CATS.filter(c=>monthCatSpend(month,c) > 0);
+  let svgInner = '';
+
+  if(total <= 0){
+    svgInner = `<circle cx="${cx}" cy="${cy}" r="${r-2}" style="fill:var(--surface-2)"></circle>`;
+  } else if(nonZeroCats.length === 1){
+    svgInner = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${CAT_COLOR[nonZeroCats[0]]}"></circle>`;
+  } else {
+    let cumulative = 0;
+    svgInner = DASH_CATS.map(c=>{
+      const v = monthCatSpend(month,c);
+      if(v <= 0) return '';
+      const startAngle = (cumulative/total)*2*Math.PI - Math.PI/2;
+      cumulative += v;
+      const endAngle = (cumulative/total)*2*Math.PI - Math.PI/2;
+      const largeArc = (endAngle-startAngle) > Math.PI ? 1 : 0;
+      const x1 = (cx + r*Math.cos(startAngle)).toFixed(2), y1 = (cy + r*Math.sin(startAngle)).toFixed(2);
+      const x2 = (cx + r*Math.cos(endAngle)).toFixed(2), y2 = (cy + r*Math.sin(endAngle)).toFixed(2);
+      return `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z" fill="${CAT_COLOR[c]}"></path>`;
+    }).join('');
+  }
+  if(total > 0){
+    svgInner += `<circle cx="${cx}" cy="${cy}" r="${(r*0.58).toFixed(2)}" style="fill:var(--glass)"></circle>`;
+  }
+
+  const centerText = total > 0
+    ? `<text x="${cx}" y="${cy-4}" text-anchor="middle" style="fill:var(--text); font-size:15px; font-weight:700; font-family:Sora,sans-serif;">NT$ ${fmt(total)}</text>
+       <text x="${cx}" y="${cy+14}" text-anchor="middle" style="fill:var(--text-3); font-size:10px;">本月花費</text>`
+    : `<text x="${cx}" y="${cy+5}" text-anchor="middle" style="fill:var(--text-3); font-size:12px;">尚無資料</text>`;
+
+  const legendRows = DASH_CATS.map(c=>{
+    const v = monthCatSpend(month,c);
+    const ofTotal = total>0 ? v/total : 0;
+    return `<div class="legend-row">
+      <div class="left"><span class="dot" style="background:${CAT_COLOR[c]}"></span>${CAT_LABEL[c]}</div>
+      <div class="right">NT$ ${fmt(v)} <span style="color:var(--text-3)">${pct(ofTotal)}</span></div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="card">
+    <div class="card-title">${MONTH_LABEL(month)} 花費類別</div>
+    <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
+      <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="flex-shrink:0;">${svgInner}${centerText}</svg>
+      <div class="legend-list" style="flex:1; min-width:140px;">${legendRows}</div>
+    </div>
+  </div>`;
+}
+
 function renderLedger(){
   const monthChips = MONTHS.map(m=>`<div class="chip ${m===currentMonth?'active':''}" onclick="selectMonth('${m}')">${MONTH_LABEL(m)}</div>`).join('');
   const spend = monthSpend(currentMonth);
@@ -635,6 +747,7 @@ function renderLedger(){
       <div class="card-title">預算使用狀況</div>
       ${budgetRows}
     </div>
+    ${renderCategoryPie(currentMonth)}
     <div class="card" style="padding-bottom:6px;">
       <div class="card-title">${MONTH_LABEL(currentMonth)} 帳目明細</div>
       ${txRows}
@@ -660,8 +773,19 @@ function renderSettings(){
   const travel = {target:Number(travelRaw.target||100000), threshold:Number(travelRaw.threshold||70000), manualExtra:Number(travelRaw.manualExtra||0)};
   const house = {target:Number(houseRaw.target||6000000), manualExtra:Number(houseRaw.manualExtra||0)};
 
+  const themePref = getThemePref();
+  const themeChip = (val,label)=>`<div class="chip ${themePref===val?'active':''}" onclick="setThemePref('${val}')">${label}</div>`;
+
   return `
   <div class="view active">
+    <div class="card settings-section">
+      <h3>外觀主題</h3>
+      <div class="month-scroll" style="padding-bottom:0;">
+        ${themeChip('system','跟隨系統')}
+        ${themeChip('light','淺色')}
+        ${themeChip('dark','深色')}
+      </div>
+    </div>
     <div class="card settings-section">
       <h3>年度目標設定</h3>
       <div class="field-group">
