@@ -294,7 +294,7 @@ button,input,select{font-family:inherit; color:inherit;}
 
 <div class="snackbar" id="snackbar">
   <span id="snackbarText"></span>
-  <button onclick="undoDelete()">復原</button>
+  <button id="snackbarUndo" onclick="undoDelete()">復原</button>
 </div>
 
 <script>
@@ -302,7 +302,9 @@ const MONTHS = ['4','5','6','7','8','9','10','11','12'];
 const MONTH_LABEL = m => m + '月';
 const MAIN_CATS = ['食材伙食','休閒娛樂','固定支出'];
 const ALL_CATS = ['食材伙食','休閒娛樂','固定支出','備註細項'];
+const DASH_CATS = ['食材伙食','休閒娛樂','固定支出','備註細項'];
 const CAT_COLOR = {'食材伙食':'var(--food)','休閒娛樂':'var(--fun)','固定支出':'var(--fixed)','備註細項':'var(--misc)'};
+const CAT_LABEL = {'食材伙食':'食材伙食','休閒娛樂':'休閒娛樂','固定支出':'固定支出','備註細項':'其他'};
 
 function seedData(){
   return {
@@ -314,6 +316,7 @@ function seedData(){
       '10':{xuan:103000, wei:47000}, '11':{xuan:103000, wei:47000}, '12':{xuan:103000, wei:47000}
     },
     bonus: 0,
+    annualGoal: 1000000,
     wishlist: {
       travel: {target:100000, threshold:70000, manualExtra:0},
       house: {target:6000000, manualExtra:0}
@@ -421,13 +424,14 @@ function monthHasOccurred(m){
   const today = new Date();
   if(today.getFullYear() > TRACK_YEAR) return true;
   if(today.getFullYear() < TRACK_YEAR) return false;
-  return parseInt(m,10) <= (today.getMonth()+1);
+  // 只統計到「上個月」，本月尚未結束不列入年度可存計算
+  return parseInt(m,10) < (today.getMonth()+1);
 }
 function occurredMonths(){ return MONTHS.filter(monthHasOccurred); }
 function lastOccurredLabel(){
   const om = occurredMonths();
   if(!om.length) return '尚未開始';
-  return MONTH_LABEL(om[0]) + '–' + MONTH_LABEL(om[om.length-1]) + '（含本月）';
+  return MONTH_LABEL(om[0]) + '–' + MONTH_LABEL(om[om.length-1]);
 }
 
 function annualSpend(){ return MONTHS.reduce((s,m)=>s+monthSpend(m),0); }
@@ -478,23 +482,24 @@ function renderDashboard(){
   const totalSave = annualSave();
   const income = annualIncome();
   const bonus = Number(state.bonus||0);
-  const goalProgress = clamp01((totalSave+bonus)/1000000);
-  const distance = Math.max(0, 1000000 - totalSave - bonus);
+  const goal = Number(state.annualGoal||1000000);
+  const totalSaveWithBonus = totalSave + bonus;
+  const goalProgress = goal>0 ? clamp01(totalSaveWithBonus/goal) : 0;
+  const distance = Math.max(0, goal - totalSaveWithBonus);
 
-  const cat3total = MAIN_CATS.reduce((s,c)=>s+annualCatSpend(c),0);
-  const miscTotal = annualCatSpend('備註細項');
+  const catAllTotal = DASH_CATS.reduce((s,c)=>s+annualCatSpend(c),0);
 
-  let stackedBar = MAIN_CATS.map(c=>{
+  let stackedBar = DASH_CATS.map(c=>{
     const v = annualCatSpend(c);
-    const w = cat3total>0 ? (v/cat3total*100) : 0;
+    const w = catAllTotal>0 ? (v/catAllTotal*100) : 0;
     return `<div style="width:${w}%; background:${CAT_COLOR[c]}"></div>`;
   }).join('');
 
-  let legendRows = MAIN_CATS.map(c=>{
+  let legendRows = DASH_CATS.map(c=>{
     const v = annualCatSpend(c);
     const ofIncome = income>0 ? v/income : 0;
     return `<div class="legend-row">
-      <div class="left"><span class="dot" style="background:${CAT_COLOR[c]}"></span>${c}</div>
+      <div class="left"><span class="dot" style="background:${CAT_COLOR[c]}"></span>${CAT_LABEL[c]}</div>
       <div class="right">NT$ ${fmt(v)} <span style="color:var(--text-3)">${pct(ofIncome)}</span></div>
     </div>`;
   }).join('');
@@ -511,11 +516,12 @@ function renderDashboard(){
   }).join('');
 
   const travel = state.wishlist?.travel || {target:100000, threshold:70000, manualExtra:0};
+  const travelThreshold = Number(travel.threshold||70000);
   const tSaved = travelSaved();
-  const tProg = clamp01(tSaved/travel.target);
+  const tProg = travel.target>0 ? clamp01(tSaved/travel.target) : 0;
   const house = state.wishlist?.house || {target:6000000, manualExtra:0};
   const hSaved = houseSaved();
-  const hProg = clamp01(hSaved/house.target);
+  const hProg = house.target>0 ? clamp01(hSaved/house.target) : 0;
 
   return `
   <div class="view active">
@@ -524,15 +530,15 @@ function renderDashboard(){
       <div class="ring-wrap">
         <div class="ring" style="--p:${(goalProgress*100).toFixed(1)}%"><span>${(goalProgress*100).toFixed(0)}%</span></div>
         <div style="flex:1;">
-          <div class="stat-label">距離存到 100 萬</div>
+          <div class="stat-label">距離存到 NT$ ${fmt(goal)}</div>
           <div class="stat-value" style="font-size:20px;">NT$ ${fmt(distance)}</div>
         </div>
       </div>
       <div class="grid2" style="margin-top:14px;">
         <div class="stat-box"><div class="stat-label">年度總花費</div><div class="stat-value pink">NT$ ${fmt(totalSpend)}</div></div>
-        <div class="stat-box"><div class="stat-label">年度可存</div><div class="stat-value blue">NT$ ${fmt(totalSave)}</div></div>
+        <div class="stat-box"><div class="stat-label">年度可存</div><div class="stat-value blue">NT$ ${fmt(totalSaveWithBonus)}</div></div>
       </div>
-      <div style="font-size:11px; color:var(--text-3); margin-top:8px;">已計入 ${lastOccurredLabel()} 的每月可存</div>
+      <div style="font-size:11px; color:var(--text-3); margin-top:8px;">已計入 ${lastOccurredLabel()} 的每月可存${bonus?'（含年終／獎金）':''}，目標金額可至「設定」調整</div>
       <div class="bonus-row">
         <label>年終＋獎金</label>
         <input class="inline-input num" type="number" inputmode="decimal" value="${bonus}" onchange="updateBonus(this.value)">
@@ -544,6 +550,7 @@ function renderDashboard(){
       <div class="wish-item">
         <div class="wish-top"><span class="wish-name">出國基金 ✈️</span><span class="wish-amt">NT$ ${fmt(tSaved)} / ${fmt(travel.target)}</span></div>
         <div class="bar-track"><div class="bar-fill" style="width:${(tProg*100).toFixed(1)}%"></div></div>
+        <div style="font-size:11px; color:var(--text-3); margin-top:6px;">每月可存超過 NT$ ${fmt(travelThreshold)} 的部分，自動納入出國基金</div>
         <div class="wish-edit">
           <input class="inline-input num" style="width:100%;" type="number" inputmode="decimal" value="${travel.manualExtra}" onchange="updateWishlistField('travel','manualExtra',this.value)">
           <span style="font-size:12px;color:var(--text-3);">手動加碼</span>
@@ -552,11 +559,13 @@ function renderDashboard(){
       <div class="wish-item">
         <div class="wish-top"><span class="wish-name">房子頭期款 🏠</span><span class="wish-amt">NT$ ${fmt(hSaved)} / ${fmt(house.target)}</span></div>
         <div class="bar-track"><div class="bar-fill" style="width:${(hProg*100).toFixed(1)}%"></div></div>
+        <div style="font-size:11px; color:var(--text-3); margin-top:6px;">每月可存中，未超過 NT$ ${fmt(travelThreshold)} 的部分，自動存入頭期款</div>
         <div class="wish-edit">
           <input class="inline-input num" style="width:100%;" type="number" inputmode="decimal" value="${house.manualExtra}" onchange="updateWishlistField('house','manualExtra',this.value)">
           <span style="font-size:12px;color:var(--text-3);">手動加碼</span>
         </div>
       </div>
+      <div style="font-size:11px; color:var(--text-3); margin-top:10px;">目標金額與門檻可至「設定」調整</div>
     </div>
 
     <div class="card">
@@ -645,8 +654,36 @@ function renderSettings(){
     </div>
   `).join('');
 
+  const goal = Number(state.annualGoal||1000000);
+  const travelRaw = state.wishlist?.travel || {target:100000, threshold:70000, manualExtra:0};
+  const houseRaw = state.wishlist?.house || {target:6000000, manualExtra:0};
+  const travel = {target:Number(travelRaw.target||100000), threshold:Number(travelRaw.threshold||70000), manualExtra:Number(travelRaw.manualExtra||0)};
+  const house = {target:Number(houseRaw.target||6000000), manualExtra:Number(houseRaw.manualExtra||0)};
+
   return `
   <div class="view active">
+    <div class="card settings-section">
+      <h3>年度目標設定</h3>
+      <div class="field-group">
+        <label>年度存款目標（含年終／獎金）</label>
+        <input class="num" type="number" inputmode="decimal" min="0" value="${goal}" onchange="updateGoal(this.value)">
+      </div>
+    </div>
+    <div class="card settings-section">
+      <h3>願望清單設定</h3>
+      <div class="field-group">
+        <label>出國基金 ✈️ 目標金額</label>
+        <input class="num" type="number" inputmode="decimal" min="0" value="${travel.target}" onchange="updateWishlistField('travel','target',this.value)">
+      </div>
+      <div class="field-group">
+        <label>每月可存門檻（超過此金額才存入出國基金；未超過的部分自動存入房子頭期款）</label>
+        <input class="num" type="number" inputmode="decimal" min="0" value="${travel.threshold}" onchange="updateWishlistField('travel','threshold',this.value)">
+      </div>
+      <div class="field-group">
+        <label>房子頭期款 🏠 目標金額</label>
+        <input class="num" type="number" inputmode="decimal" min="0" value="${house.target}" onchange="updateWishlistField('house','target',this.value)">
+      </div>
+    </div>
     <div class="card settings-section">
       <h3>預算控制</h3>
       ${budgetInputs}
@@ -660,17 +697,48 @@ function renderSettings(){
       </div>
     </div>
     <div class="card settings-section">
+      <h3>通知設定</h3>
+      <div style="font-size:13px; color:var(--text-2); margin-bottom:10px;">${notifStatusText()}</div>
+      <button class="small-btn" style="width:100%; background:var(--blue-soft);" onclick="requestNotifPermission()">開啟手機通知</button>
+      <div style="font-size:11px; color:var(--text-3); margin-top:8px;">開啟後，編輯或刪除數字時手機會跳出系統通知（需將本頁加入主畫面並允許通知權限，實際效果依手機與瀏覽器而定）</div>
+    </div>
+    <div class="card settings-section">
       <h3>雲端資料庫設定</h3>
       <button class="small-btn" style="width:100%; background:var(--blue-soft);" onclick="document.getElementById('configPanel').style.display='flex'">編輯 Supabase 連線金鑰</button>
     </div>
   </div>`;
 }
 
+function notifSupported(){ return typeof Notification !== 'undefined'; }
+function notifStatusText(){
+  if(!notifSupported()) return '此瀏覽器不支援手機系統通知';
+  if(Notification.permission==='granted') return '✅ 已開啟手機通知';
+  if(Notification.permission==='denied') return '⚠️ 通知已被封鎖，請至手機/瀏覽器設定中開啟';
+  return '尚未開啟手機通知，請點下方按鈕開啟';
+}
+function requestNotifPermission(){
+  if(!notifSupported()){ alert('此瀏覽器不支援手機系統通知功能'); return; }
+  Notification.requestPermission().then(()=>{ render(); });
+}
+function pushNotify(text){
+  if(notifSupported() && Notification.permission==='granted'){
+    try{ new Notification('軒葳記帳', { body: text, icon: 'icon.png' }); }catch(e){}
+  }
+}
+function notifyChange(text){ showSnackbar(text); pushNotify(text); }
+
 function selectMonth(m){ currentMonth = m; render(); }
-function updateBonus(v){ state.bonus = Number(v||0); saveState(); render(); }
-function updateWishlistField(key,field,v){ if(!state.wishlist[key]) state.wishlist[key]={}; state.wishlist[key][field] = Number(v||0); saveState(); render(); }
-function updateIncome(m,who,v){ state.income[m][who] = Number(v||0); saveState(); render(); }
-function updateBudget(cat,v){ state.budgets[cat] = Number(v||0); saveState(); render(); }
+function updateGoal(v){ state.annualGoal = Number(v||0); saveState(); render(); notifyChange('已更新年度存款目標'); }
+function updateBonus(v){ state.bonus = Number(v||0); saveState(); render(); notifyChange('已更新年終／獎金'); }
+function updateWishlistField(key,field,v){
+  if(!state.wishlist[key]) state.wishlist[key]={};
+  state.wishlist[key][field] = Number(v||0);
+  saveState(); render();
+  const label = field==='target' ? '已更新目標金額' : field==='threshold' ? '已更新每月可存門檻' : '已更新手動加碼金額';
+  notifyChange(label);
+}
+function updateIncome(m,who,v){ state.income[m][who] = Number(v||0); saveState(); render(); notifyChange('已更新收入'); }
+function updateBudget(cat,v){ state.budgets[cat] = Number(v||0); saveState(); render(); notifyChange('已更新預算上限'); }
 
 function addPM(){
   const input = document.getElementById('newPM');
@@ -706,6 +774,7 @@ function saveTransaction(){
   if(!amount || amount<=0){ alert('請輸入金額'); return; }
   state.transactions.push({ id:'t'+Date.now(), month, method:modalMethod, category:modalCat, amount, note });
   saveState(); closeModal(); currentMonth = month; switchView('ledger');
+  pushNotify(`已新增一筆帳目：${modalCat} NT$ ${fmt(amount)}`);
 }
 
 function deleteTransaction(id){
@@ -714,15 +783,17 @@ function deleteTransaction(id){
   lastDeleted = {item: state.transactions[idx], idx};
   state.transactions.splice(idx,1);
   saveState(); render();
-  showSnackbar('已刪除帳目');
+  showSnackbar('已刪除帳目', true);
+  pushNotify('已刪除一筆帳目');
 }
 function undoDelete(){
   if(!lastDeleted) return;
   state.transactions.splice(lastDeleted.idx, 0, lastDeleted.item);
   lastDeleted = null; saveState(); render(); hideSnackbar();
 }
-function showSnackbar(text){
+function showSnackbar(text, showUndo){
   document.getElementById('snackbarText').textContent = text;
+  document.getElementById('snackbarUndo').style.display = showUndo ? 'inline-block' : 'none';
   document.getElementById('snackbar').classList.add('show');
   clearTimeout(snackTimer); snackTimer = setTimeout(hideSnackbar, 4000);
 }
