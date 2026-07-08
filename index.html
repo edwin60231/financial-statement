@@ -21,8 +21,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="軒葳記帳">
-<title>軒葳年度記帳</title>
+<meta name="apple-mobile-web-app-title" content="年度記帳">
+<title>年度記帳管理 App</title>
 
 <!-- 連結至手機 App 設定檔 -->
 <link rel="manifest" href="manifest.json">
@@ -87,7 +87,7 @@ button,input,select{font-family:inherit; color:inherit;}
   background: var(--glass-2); backdrop-filter:blur(20px) saturate(160%); -webkit-backdrop-filter:blur(20px) saturate(160%);
   padding: 16px; border-bottom: 1px solid var(--border);
   font-size: 13px; display: flex; flex-direction: column; gap: 10px; max-width: 520px; margin: 0 auto;
-  border-radius: var(--radius-sm); margin-top: 10px;
+  border-radius: var(--radius-sm); margin-top: calc(10px + env(safe-area-inset-top, 0px));
 }
 .config-panel input {
   width: 100%; padding: 10px; border-radius: var(--radius-sm); border: 0.5px solid var(--border);
@@ -97,9 +97,22 @@ button,input,select{font-family:inherit; color:inherit;}
 .app-bar{
   position:sticky; top:0; z-index:20; background:var(--glass-bar);
   backdrop-filter:blur(24px) saturate(160%); -webkit-backdrop-filter:blur(24px) saturate(160%);
-  padding:18px 18px 10px; display:flex; align-items:center; justify-content:space-between;
+  padding:calc(14px + env(safe-area-inset-top, 0px)) 18px 10px; display:flex; align-items:center; justify-content:space-between;
 }
-.app-bar h1{font-size:20px; font-weight:600; margin:0;}
+.app-bar .brand{display:flex; align-items:center; gap:10px; min-width:0;}
+.brand-icon{
+  width:34px; height:34px; border-radius:10px; flex-shrink:0; overflow:hidden;
+  background:linear-gradient(135deg,var(--blue),var(--pink));
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 3px 10px rgba(0,0,0,0.25);
+}
+.brand-icon img{width:100%; height:100%; object-fit:cover; display:block;}
+.brand-icon svg{flex-shrink:0;}
+.app-bar h1{
+  font-size:19px; font-weight:700; margin:0; letter-spacing:-0.2px; white-space:nowrap;
+  background:linear-gradient(135deg,var(--blue),var(--pink));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
 .app-bar .sub{font-size:12px; color:var(--text-3); margin-top:2px;}
 .icon-btn{
   width:38px;height:38px;border-radius:50%;border:0.5px solid var(--border);
@@ -155,6 +168,11 @@ button,input,select{font-family:inherit; color:inherit;}
 .bar-fill{height:100%; border-radius:5px; background:linear-gradient(90deg,var(--blue),var(--pink));}
 .wish-edit{display:flex; gap:8px; margin-top:8px; align-items:center;}
 .wish-edit input{flex:1;}
+.manual-extra-btn{
+  width:100%; margin-top:8px; padding:9px 12px; border-radius:var(--radius-sm);
+  border:0.5px dashed var(--border); background:var(--surface-2); color:var(--text-2);
+  font-size:13px; cursor:pointer; text-align:left;
+}
 
 .stacked-bar{height:14px; border-radius:7px; overflow:hidden; display:flex; margin:6px 0 12px;}
 .legend-list{display:flex; flex-direction:column; gap:8px;}
@@ -164,6 +182,9 @@ button,input,select{font-family:inherit; color:inherit;}
 
 .month-scroll{display:flex; gap:8px; overflow-x:auto; padding:4px 2px 10px; -ms-overflow-style:none; scrollbar-width:none;}
 .month-scroll::-webkit-scrollbar{display:none;}
+.month-nav-row{display:flex; align-items:center; gap:6px;}
+.month-arrow{width:32px; height:32px; font-size:17px; flex-shrink:0;}
+.icon-btn:disabled{opacity:0.3; cursor:default;}
 .chip{
   flex-shrink:0; padding:8px 16px; border-radius:20px; border:0.5px solid var(--border);
   background:var(--surface); font-size:14px; color:var(--text-2); cursor:pointer; white-space:nowrap;
@@ -209,10 +230,19 @@ button,input,select{font-family:inherit; color:inherit;}
   display:flex; padding:8px 0 max(8px,env(safe-area-inset-bottom)); z-index:25;
 }
 .nav-btn{
-  flex:1; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px;
-  color:var(--text-3); font-size:11px; cursor:pointer; padding:6px 0;
+  flex:1; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:2px;
+  color:var(--text-3); font-size:10.5px; cursor:pointer; padding:4px 0 6px;
 }
-.nav-btn.active{color:var(--text);}
+.nav-icon{
+  font-size:19px; width:46px; height:28px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  transition:background 0.2s ease, transform 0.2s ease;
+}
+.nav-btn.active{color:var(--text); font-weight:600;}
+.nav-btn.active .nav-icon{
+  background:linear-gradient(135deg,var(--blue-soft),var(--pink-soft));
+  transform:translateY(-1px);
+}
 
 .modal-overlay{
   position:fixed; inset:0; background:rgba(0,0,0,0.4); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
@@ -248,6 +278,8 @@ button,input,select{font-family:inherit; color:inherit;}
 
 .settings-section{margin-bottom:18px;}
 .settings-section h3{font-size:14px; margin:0 0 10px; color:var(--text-2); font-weight:500;}
+.settings-back-row{display:flex; align-items:center; gap:10px; margin:2px 2px 14px;}
+.settings-back-title{font-size:16px; font-weight:700;}
 .pm-row{display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:0.5px solid var(--border); font-size:14px;}
 .pm-row:last-child{border-bottom:none;}
 .add-pm-row{display:flex; gap:8px; margin-top:10px;}
@@ -275,9 +307,14 @@ button,input,select{font-family:inherit; color:inherit;}
 </div>
 
 <div class="app-bar">
-  <div>
-    <h1 id="barTitle">軒葳年度記帳</h1>
-    <div class="sub" id="barSub">2026 年度總覽</div>
+  <div class="brand">
+    <div class="brand-icon" id="brandIcon">
+      <img src="icon.png" alt="" onerror="brandIconFallback()">
+    </div>
+    <div style="min-width:0;">
+      <h1 id="barTitle">年度記帳管理 App</h1>
+      <div class="sub" id="barSub">2026 年度總覽</div>
+    </div>
   </div>
   <button class="icon-btn" onclick="switchView('settings')" aria-label="設定">⚙️</button>
 </div>
@@ -290,13 +327,13 @@ button,input,select{font-family:inherit; color:inherit;}
 
 <div class="bottom-nav">
   <button class="nav-btn active" id="btn-dashboard" onclick="switchView('dashboard')">
-    <span>📊</span><span>總覽</span>
+    <span class="nav-icon">📊</span><span>總覽</span>
   </button>
   <button class="nav-btn" id="btn-ledger" onclick="switchView('ledger')">
-    <span>📥</span><span>記帳</span>
+    <span class="nav-icon">📥</span><span>記帳</span>
   </button>
   <button class="nav-btn" id="btn-settings" onclick="switchView('settings')">
-    <span>⚙️</span><span>設定</span>
+    <span class="nav-icon">⚙️</span><span>設定</span>
   </button>
 </div>
 
@@ -385,10 +422,12 @@ function seedData(){
 
 let state = null;
 let currentView = 'dashboard';
+let settingsReturnView = 'dashboard';
 let currentMonth = '7';
 let lastDeleted = null;
 let snackTimer = null;
 let supabaseClient = null;
+let manualExtraEditing = {travel:false, house:false};
 
 function checkKeys() {
   const url = localStorage.getItem('sb_url');
@@ -418,6 +457,7 @@ function initSupabase(url, key) {
       supabaseClient = window.supabase.createClient(url, key);
       document.getElementById('configPanel').style.display = 'none';
       loadState();
+      setupRealtimeSync();
     } else {
       setTimeout(() => initSupabase(url, key), 2000);
     }
@@ -425,6 +465,87 @@ function initSupabase(url, key) {
     document.getElementById('configPanel').style.display = 'flex';
     document.getElementById('root').innerHTML = '<div class="loading" style="color:var(--red)">連線失敗，請檢查金鑰。</div>';
   }
+}
+
+let realtimeChannel = null;
+function setupRealtimeSync(){
+  if (!supabaseClient || realtimeChannel) return;
+  try {
+    realtimeChannel = supabaseClient
+      .channel('app_state_sync')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_state', filter: 'id=eq.1' }, payload => {
+        if (payload && payload.new && payload.new.content) {
+          handleRemoteStateChange(payload.new.content);
+        }
+      })
+      .subscribe();
+  } catch(e) {}
+}
+
+function handleRemoteStateChange(newContent){
+  if (!state) { state = newContent; render(); return; }
+  if (!deepEqual(state, newContent)) {
+    const message = describeStateDiff(state, newContent);
+    state = newContent;
+    render();
+    pushNotify(message || '資料已更新（其他裝置變更）');
+  }
+}
+
+function deepEqual(a, b){
+  if (a === b) return true;
+  if (typeof a !== typeof b) return false;
+  if (a === null || b === null) return a === b;
+  if (typeof a !== 'object') return a === b;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a)) {
+    if (a.length !== b.length) return false;
+    for (let i=0; i<a.length; i++) { if (!deepEqual(a[i], b[i])) return false; }
+    return true;
+  }
+  const ak = Object.keys(a), bk = Object.keys(b);
+  if (ak.length !== bk.length) return false;
+  for (const k of ak) { if (!deepEqual(a[k], b[k])) return false; }
+  return true;
+}
+
+function describeStateDiff(oldS, newS){
+  try {
+    const oldTx = oldS.transactions || [], newTx = newS.transactions || [];
+    if (newTx.length > oldTx.length) {
+      const oldIds = new Set(oldTx.map(t=>t.id));
+      const added = newTx.filter(t=>!oldIds.has(t.id));
+      if (added.length) {
+        const t = added[added.length-1];
+        return `${t.method || '其他裝置'} 新增一筆帳目：${t.category} NT$ ${fmt(t.amount)}`;
+      }
+      return '其他裝置新增了一筆帳目';
+    }
+    if (newTx.length < oldTx.length) return '其他裝置刪除了一筆帳目';
+
+    if (Number(oldS.bonus||0) !== Number(newS.bonus||0)) return '其他裝置更新了年終／獎金';
+    if (Number(oldS.annualGoal||0) !== Number(newS.annualGoal||0)) return '其他裝置更新了年度存款目標';
+
+    const ot = oldS.wishlist?.travel||{}, nt = newS.wishlist?.travel||{};
+    if (Number(ot.target||0) !== Number(nt.target||0)) return '其他裝置更新了出國基金目標金額';
+    if (Number(ot.threshold||0) !== Number(nt.threshold||0)) return '其他裝置更新了每月可存門檻';
+    if (Number(ot.manualExtra||0) !== Number(nt.manualExtra||0)) return '其他裝置更新了出國基金手動加碼';
+
+    const oh = oldS.wishlist?.house||{}, nh = newS.wishlist?.house||{};
+    if (Number(oh.target||0) !== Number(nh.target||0)) return '其他裝置更新了房子頭期款目標金額';
+    if (Number(oh.manualExtra||0) !== Number(nh.manualExtra||0)) return '其他裝置更新了房子頭期款手動加碼';
+
+    for (const c of MAIN_CATS) {
+      if (Number(oldS.budgets?.[c]||0) !== Number(newS.budgets?.[c]||0)) return `其他裝置更新了${c}預算上限`;
+    }
+    for (const m of MONTHS) {
+      const oi = oldS.income?.[m]||{}, ni = newS.income?.[m]||{};
+      if (Number(oi.xuan||0) !== Number(ni.xuan||0) || Number(oi.wei||0) !== Number(ni.wei||0)) {
+        return `其他裝置更新了${MONTH_LABEL(m)}的收入`;
+      }
+    }
+    return '其他裝置更新了資料';
+  } catch(e) { return '其他裝置更新了資料'; }
 }
 
 async function loadState(){
@@ -472,7 +593,51 @@ if(window.matchMedia){
   });
 }
 
-window.addEventListener('DOMContentLoaded', function(){ applyTheme(); checkKeys(); });
+function brandIconFallback(){
+  const el = document.getElementById('brandIcon');
+  if(!el || el.dataset.fallbackApplied) return;
+  el.dataset.fallbackApplied = '1';
+  el.innerHTML = '';
+  const svgNs = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNs, 'svg');
+  svg.setAttribute('viewBox','0 0 24 24');
+  svg.setAttribute('width','19'); svg.setAttribute('height','19');
+  svg.setAttribute('fill','none'); svg.setAttribute('stroke','#fff');
+  svg.setAttribute('stroke-width','2.2'); svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
+  ['M4 19V10','M10 19V5','M16 19v-7','M4 19h16'].forEach(d=>{
+    const p = document.createElementNS(svgNs,'path');
+    p.setAttribute('d', d);
+    svg.appendChild(p);
+  });
+  el.appendChild(svg);
+}
+
+let swipeStartX = 0, swipeStartY = 0, swipeStartTarget = null;
+function handleSwipeStart(e){
+  if(currentView !== 'ledger') return;
+  if(document.getElementById('modalOverlay').classList.contains('show')) return;
+  const t = e.touches[0];
+  swipeStartX = t.clientX; swipeStartY = t.clientY; swipeStartTarget = e.target;
+}
+function handleSwipeEnd(e){
+  if(currentView !== 'ledger') return;
+  if(!swipeStartTarget) return;
+  if(swipeStartTarget.closest && swipeStartTarget.closest('.month-scroll')){ swipeStartTarget = null; return; }
+  if(document.getElementById('modalOverlay').classList.contains('show')){ swipeStartTarget = null; return; }
+  const t = e.changedTouches[0];
+  const dx = t.clientX - swipeStartX;
+  const dy = t.clientY - swipeStartY;
+  swipeStartTarget = null;
+  if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)*1.5){
+    shiftMonth(dx < 0 ? 1 : -1);
+  }
+}
+window.addEventListener('DOMContentLoaded', function(){
+  applyTheme(); checkKeys();
+  const root = document.getElementById('root');
+  root.addEventListener('touchstart', handleSwipeStart, {passive:true});
+  root.addEventListener('touchend', handleSwipeEnd, {passive:true});
+});
 
 function monthSpend(m){ return (state.transactions || []).filter(t=>t.month===m).reduce((s,t)=>s+Number(t.amount||0),0); }
 function monthCatSpend(m,cat){ return (state.transactions || []).filter(t=>t.month===m && t.category===cat).reduce((s,t)=>s+Number(t.amount||0),0); }
@@ -518,10 +683,26 @@ function houseSaved(){
 }
 
 function fmt(n){ return Math.round(n || 0).toLocaleString('zh-TW'); }
+function fmtCompact(n){
+  n = Math.round(n || 0);
+  const sign = n < 0 ? '-' : '';
+  const abs = Math.abs(n);
+  if(abs >= 10000){
+    const w = abs / 10000;
+    return sign + (Number.isInteger(w) ? w.toFixed(0) : w.toFixed(1)) + '萬';
+  }
+  return sign + abs.toLocaleString('zh-TW');
+}
 function pct(n){ return ((n || 0)*100).toFixed(1)+'%'; }
 function clamp01(n){ return Math.max(0, Math.min(1, n)); }
 
 function switchView(v){
+  if(v === 'settings' && currentView !== 'settings'){
+    settingsReturnView = currentView;
+  }
+  if(v !== 'dashboard'){
+    manualExtraEditing = {travel:false, house:false};
+  }
   currentView = v;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.id===`btn-${v}`));
   document.getElementById('fabBtn').style.display = (v==='ledger' || v==='dashboard') ? 'flex' : 'none';
@@ -611,19 +792,25 @@ function renderDashboard(){
         <div class="wish-top"><span class="wish-name">出國基金 ✈️</span><span class="wish-amt">NT$ ${fmt(tSaved)} / ${fmt(travel.target)}</span></div>
         <div class="bar-track"><div class="bar-fill" style="width:${(tProg*100).toFixed(1)}%"></div></div>
         <div style="font-size:11px; color:var(--text-3); margin-top:6px;">每月可存超過 NT$ ${fmt(travelThreshold)} 的部分，自動納入出國基金</div>
+        ${manualExtraEditing.travel ? `
         <div class="wish-edit">
-          <input class="inline-input num" style="width:100%;" type="number" inputmode="decimal" value="${travel.manualExtra}" onchange="updateWishlistField('travel','manualExtra',this.value)">
-          <span style="font-size:12px;color:var(--text-3);">手動加碼</span>
-        </div>
+          <input id="manualExtraInput-travel" class="inline-input num" style="flex:1;" type="number" inputmode="decimal" value="${travel.manualExtra}" autofocus>
+          <button class="small-btn" onclick="saveManualExtra('travel')">儲存</button>
+          <button class="small-btn" onclick="toggleManualExtraEdit('travel',false)">取消</button>
+        </div>` : `
+        <button class="manual-extra-btn" onclick="toggleManualExtraEdit('travel',true)">✏️ 手動加碼：NT$ ${fmt(travel.manualExtra)}</button>`}
       </div>
       <div class="wish-item">
         <div class="wish-top"><span class="wish-name">房子頭期款 🏠</span><span class="wish-amt">NT$ ${fmt(hSaved)} / ${fmt(house.target)}</span></div>
         <div class="bar-track"><div class="bar-fill" style="width:${(hProg*100).toFixed(1)}%"></div></div>
         <div style="font-size:11px; color:var(--text-3); margin-top:6px;">每月可存中，未超過 NT$ ${fmt(travelThreshold)} 的部分，自動存入頭期款</div>
+        ${manualExtraEditing.house ? `
         <div class="wish-edit">
-          <input class="inline-input num" style="width:100%;" type="number" inputmode="decimal" value="${house.manualExtra}" onchange="updateWishlistField('house','manualExtra',this.value)">
-          <span style="font-size:12px;color:var(--text-3);">手動加碼</span>
-        </div>
+          <input id="manualExtraInput-house" class="inline-input num" style="flex:1;" type="number" inputmode="decimal" value="${house.manualExtra}" autofocus>
+          <button class="small-btn" onclick="saveManualExtra('house')">儲存</button>
+          <button class="small-btn" onclick="toggleManualExtraEdit('house',false)">取消</button>
+        </div>` : `
+        <button class="manual-extra-btn" onclick="toggleManualExtraEdit('house',true)">✏️ 手動加碼：NT$ ${fmt(house.manualExtra)}</button>`}
       </div>
       <div style="font-size:11px; color:var(--text-3); margin-top:10px;">目標金額與門檻可至「設定」調整</div>
     </div>
@@ -666,20 +853,20 @@ function renderCategoryPie(month){
     }).join('');
   }
   if(total > 0){
-    svgInner += `<circle cx="${cx}" cy="${cy}" r="${(r*0.58).toFixed(2)}" style="fill:var(--glass)"></circle>`;
+    svgInner += `<circle cx="${cx}" cy="${cy}" r="${(r*0.64).toFixed(2)}" style="fill:var(--surface)"></circle>`;
   }
 
   const centerText = total > 0
-    ? `<text x="${cx}" y="${cy-4}" text-anchor="middle" style="fill:var(--text); font-size:15px; font-weight:700; font-family:Sora,sans-serif;">NT$ ${fmt(total)}</text>
-       <text x="${cx}" y="${cy+14}" text-anchor="middle" style="fill:var(--text-3); font-size:10px;">本月花費</text>`
-    : `<text x="${cx}" y="${cy+5}" text-anchor="middle" style="fill:var(--text-3); font-size:12px;">尚無資料</text>`;
+    ? `<text x="${cx}" y="${cy-4}" text-anchor="middle" style="fill:var(--text); font-size:14px; font-weight:700; font-family:Sora,sans-serif;">NT$ ${fmtCompact(total)}</text>
+       <text x="${cx}" y="${cy+14}" text-anchor="middle" style="fill:var(--text-2); font-size:10px;">本月花費</text>`
+    : `<text x="${cx}" y="${cy+5}" text-anchor="middle" style="fill:var(--text-2); font-size:12px;">尚無資料</text>`;
 
   const legendRows = DASH_CATS.map(c=>{
     const v = monthCatSpend(month,c);
     const ofTotal = total>0 ? v/total : 0;
     return `<div class="legend-row">
       <div class="left"><span class="dot" style="background:${CAT_COLOR[c]}"></span>${CAT_LABEL[c]}</div>
-      <div class="right">NT$ ${fmt(v)} <span style="color:var(--text-3)">${pct(ofTotal)}</span></div>
+      <div class="right">NT$ ${fmt(v)} <span style="color:var(--text-2)">${pct(ofTotal)}</span></div>
     </div>`;
   }).join('');
 
@@ -703,10 +890,14 @@ function renderLedger(){
   const budgetRows = MAIN_CATS.map(c=>{
     const spent = monthCatSpend(currentMonth,c);
     const budget = state.budgets[c] || 1;
-    const p = clamp01(spent/budget);
+    const pctRaw = budget>0 ? spent/budget : 0;
+    const p = clamp01(pctRaw);
     const over = spent > budget;
     return `<div class="budget-item">
-      <div class="budget-top"><span class="name">${c}</span><span class="amt">NT$ ${fmt(spent)} / ${fmt(budget)}</span></div>
+      <div class="budget-top">
+        <span class="name">${c}</span>
+        <span class="amt">NT$ ${fmt(spent)} / ${fmt(budget)} <b style="margin-left:4px; font-weight:700; color:${over?'var(--red)':'var(--text-2)'}">${(pctRaw*100).toFixed(0)}%</b></span>
+      </div>
       <div class="bar-track"><div class="bar-fill" style="width:${(p*100).toFixed(1)}%; background:${over?'var(--red)':CAT_COLOR[c]}"></div></div>
     </div>`;
   }).join('');
@@ -724,9 +915,14 @@ function renderLedger(){
     </div>
   `).join('') : `<div class="empty-hint">這個月還沒有帳目，點右下角＋新增一筆</div>`;
 
+  const monthIdx = MONTHS.indexOf(currentMonth);
   return `
   <div class="view active">
-    <div class="month-scroll">${monthChips}</div>
+    <div class="month-nav-row">
+      <button class="icon-btn month-arrow" onclick="shiftMonth(-1)" aria-label="上個月" ${monthIdx<=0?'disabled':''}>‹</button>
+      <div class="month-scroll" style="flex:1;">${monthChips}</div>
+      <button class="icon-btn month-arrow" onclick="shiftMonth(1)" aria-label="下個月" ${monthIdx>=MONTHS.length-1?'disabled':''}>›</button>
+    </div>
     <div class="card">
       <div class="grid2">
         <div class="stat-box"><div class="stat-label">當月總花費</div><div class="stat-value pink">NT$ ${fmt(spend)}</div></div>
@@ -778,6 +974,10 @@ function renderSettings(){
 
   return `
   <div class="view active">
+    <div class="settings-back-row">
+      <button class="icon-btn" onclick="switchView(settingsReturnView)" aria-label="返回">←</button>
+      <span class="settings-back-title">設定</span>
+    </div>
     <div class="card settings-section">
       <h3>外觀主題</h3>
       <div class="month-scroll" style="padding-bottom:0;">
@@ -824,7 +1024,10 @@ function renderSettings(){
       <h3>通知設定</h3>
       <div style="font-size:13px; color:var(--text-2); margin-bottom:10px;">${notifStatusText()}</div>
       <button class="small-btn" style="width:100%; background:var(--blue-soft);" onclick="requestNotifPermission()">開啟手機通知</button>
-      <div style="font-size:11px; color:var(--text-3); margin-top:8px;">開啟後，編輯或刪除數字時手機會跳出系統通知（需將本頁加入主畫面並允許通知權限，實際效果依手機與瀏覽器而定）</div>
+      <div style="font-size:11px; color:var(--text-3); margin-top:8px; line-height:1.6;">
+        開啟後：① 自己編輯或刪除數字時，手機會立即跳出系統通知；② 只要雙方的手機都保持開啟這個網頁（可在背景），當任一方新增／修改／刪除資料時，另一方的裝置也會即時收到通知。<br>
+        （需將本頁加入主畫面並允許通知權限；跨裝置同步通知需要 Supabase 專案的 Realtime 功能已針對 app_state 資料表開啟，且雙方裝置皆需保持頁面開啟中）
+      </div>
     </div>
     <div class="card settings-section">
       <h3>雲端資料庫設定</h3>
@@ -846,12 +1049,20 @@ function requestNotifPermission(){
 }
 function pushNotify(text){
   if(notifSupported() && Notification.permission==='granted'){
-    try{ new Notification('軒葳記帳', { body: text, icon: 'icon.png' }); }catch(e){}
+    try{ new Notification('年度記帳管理', { body: text, icon: 'icon.png' }); }catch(e){}
   }
 }
 function notifyChange(text){ showSnackbar(text); pushNotify(text); }
 
 function selectMonth(m){ currentMonth = m; render(); }
+function shiftMonth(delta){
+  const idx = MONTHS.indexOf(currentMonth);
+  const newIdx = idx + delta;
+  if(newIdx < 0 || newIdx >= MONTHS.length) return;
+  currentMonth = MONTHS[newIdx];
+  if(currentView==='ledger') document.getElementById('barSub').textContent = MONTH_LABEL(currentMonth)+' 記帳';
+  render();
+}
 function updateGoal(v){ state.annualGoal = Number(v||0); saveState(); render(); notifyChange('已更新年度存款目標'); }
 function updateBonus(v){ state.bonus = Number(v||0); saveState(); render(); notifyChange('已更新年終／獎金'); }
 function updateWishlistField(key,field,v){
@@ -863,6 +1074,17 @@ function updateWishlistField(key,field,v){
 }
 function updateIncome(m,who,v){ state.income[m][who] = Number(v||0); saveState(); render(); notifyChange('已更新收入'); }
 function updateBudget(cat,v){ state.budgets[cat] = Number(v||0); saveState(); render(); notifyChange('已更新預算上限'); }
+
+function toggleManualExtraEdit(key, val){
+  manualExtraEditing[key] = (val !== undefined) ? val : !manualExtraEditing[key];
+  render();
+}
+function saveManualExtra(key){
+  const input = document.getElementById('manualExtraInput-'+key);
+  const v = input ? input.value : 0;
+  manualExtraEditing[key] = false;
+  updateWishlistField(key, 'manualExtra', v);
+}
 
 function addPM(){
   const input = document.getElementById('newPM');
