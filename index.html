@@ -45,8 +45,8 @@
   --radius:16px; --radius-sm:10px;
   --food:#EC6FA0; --fun:#5B8DEF; --fixed:#8C90A6; --misc:#5B6272;
   /* 毛玻璃材質（深色） */
-  --glass:rgba(21,24,34,0.68); --glass-2:rgba(29,33,48,0.6); --glass-bar:rgba(11,13,18,0.55);
-  --toast-glass:rgba(242,243,246,0.92);
+  --glass:rgba(21,24,34,0.5); --glass-2:rgba(29,33,48,0.4); --glass-bar:rgba(11,13,18,0.38);
+  --toast-glass:rgba(242,243,246,0.88);
   --wallpaper:
     radial-gradient(at 15% -10%, rgba(91,141,239,0.38) 0, transparent 55%),
     radial-gradient(at 85% 0%, rgba(236,111,160,0.32) 0, transparent 55%),
@@ -63,8 +63,8 @@
   --red:#D0364E; --red-soft:rgba(208,54,78,0.10);
   --food:#D6488B; --fun:#3E71D6; --fixed:#7A7F92; --misc:#9CA1B0;
   /* 毛玻璃材質（淺色） */
-  --glass:rgba(255,255,255,0.68); --glass-2:rgba(240,241,246,0.62); --glass-bar:rgba(245,246,250,0.6);
-  --toast-glass:rgba(23,25,33,0.9);
+  --glass:rgba(255,255,255,0.5); --glass-2:rgba(240,241,246,0.44); --glass-bar:rgba(245,246,250,0.42);
+  --toast-glass:rgba(23,25,33,0.85);
   --wallpaper:
     radial-gradient(at 15% -10%, rgba(62,113,214,0.20) 0, transparent 55%),
     radial-gradient(at 85% 0%, rgba(214,72,139,0.16) 0, transparent 55%),
@@ -81,10 +81,11 @@ body{
 h1,h2,h3,.num-lg{font-family:'Sora',sans-serif;}
 .num,.num-lg{font-variant-numeric:tabular-nums; font-feature-settings:"tnum";}
 button,input,select{font-family:inherit; color:inherit;}
+.icon{vertical-align:-3px; flex-shrink:0;}
 
 /* 金鑰設定面板樣式 */
 .config-panel {
-  background: var(--glass-2); backdrop-filter:blur(20px) saturate(160%); -webkit-backdrop-filter:blur(20px) saturate(160%);
+  background: var(--glass-2); backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%);
   padding: 16px; border-bottom: 1px solid var(--border);
   font-size: 13px; display: flex; flex-direction: column; gap: 10px; max-width: 520px; margin: 0 auto;
   border-radius: var(--radius-sm); margin-top: calc(10px + env(safe-area-inset-top, 0px));
@@ -96,7 +97,7 @@ button,input,select{font-family:inherit; color:inherit;}
 
 .app-bar{
   position:sticky; top:0; z-index:20; background:var(--glass-bar);
-  backdrop-filter:blur(24px) saturate(160%); -webkit-backdrop-filter:blur(24px) saturate(160%);
+  backdrop-filter:blur(30px) saturate(180%); -webkit-backdrop-filter:blur(30px) saturate(180%);
   padding:calc(14px + env(safe-area-inset-top, 0px)) 18px 10px; display:flex; align-items:center; justify-content:space-between;
 }
 .app-bar .brand{display:flex; align-items:center; gap:10px; min-width:0;}
@@ -116,14 +117,23 @@ button,input,select{font-family:inherit; color:inherit;}
 .app-bar .sub{font-size:12px; color:var(--text-3); margin-top:2px;}
 .icon-btn{
   width:38px;height:38px;border-radius:50%;border:0.5px solid var(--border);
-  background:var(--glass-2); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  background:var(--glass-2); backdrop-filter:blur(16px) saturate(180%); -webkit-backdrop-filter:blur(16px) saturate(180%);
   display:flex;align-items:center;justify-content:center;
   cursor:pointer; color:var(--text-2); flex-shrink:0;
 }
 .view{display:none; padding:6px 16px 24px; max-width:520px; margin:0 auto;}
 .view.active{display:block;}
+#root{will-change:transform, opacity;}
+.slide-out-left{animation:slideOutLeft 0.15s ease forwards;}
+.slide-out-right{animation:slideOutRight 0.15s ease forwards;}
+.slide-in-left{animation:slideInLeft 0.22s ease;}
+.slide-in-right{animation:slideInRight 0.22s ease;}
+@keyframes slideOutLeft{ to{ transform:translateX(-28px); opacity:0.3; } }
+@keyframes slideOutRight{ to{ transform:translateX(28px); opacity:0.3; } }
+@keyframes slideInLeft{ from{ transform:translateX(-28px); opacity:0.3; } to{ transform:translateX(0); opacity:1; } }
+@keyframes slideInRight{ from{ transform:translateX(28px); opacity:0.3; } to{ transform:translateX(0); opacity:1; } }
 .card{
-  background:var(--glass); backdrop-filter:blur(20px) saturate(160%); -webkit-backdrop-filter:blur(20px) saturate(160%);
+  background:var(--glass); backdrop-filter:blur(26px) saturate(180%); -webkit-backdrop-filter:blur(26px) saturate(180%);
   border:0.5px solid var(--border); border-radius:var(--radius);
   padding:18px; margin-bottom:14px;
 }
@@ -225,7 +235,7 @@ button,input,select{font-family:inherit; color:inherit;}
 }
 .bottom-nav{
   position:fixed; bottom:0; left:0; right:0; background:var(--glass-bar);
-  backdrop-filter:blur(24px) saturate(160%); -webkit-backdrop-filter:blur(24px) saturate(160%);
+  backdrop-filter:blur(30px) saturate(180%); -webkit-backdrop-filter:blur(30px) saturate(180%);
   border-top:0.5px solid var(--border);
   display:flex; padding:8px 0 max(8px,env(safe-area-inset-bottom)); z-index:25;
 }
@@ -252,7 +262,7 @@ button,input,select{font-family:inherit; color:inherit;}
 .modal-overlay.show{display:flex;}
 .modal-sheet{
   width:100%; max-width:520px; background:var(--glass);
-  backdrop-filter:blur(28px) saturate(160%); -webkit-backdrop-filter:blur(28px) saturate(160%);
+  backdrop-filter:blur(32px) saturate(180%); -webkit-backdrop-filter:blur(32px) saturate(180%);
   border-radius:20px 20px 0 0;
   padding:20px 20px calc(20px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto;
 }
@@ -288,7 +298,7 @@ button,input,select{font-family:inherit; color:inherit;}
 
 .snackbar{
   position:fixed; bottom:96px; left:16px; right:16px; max-width:488px; margin:0 auto;
-  background:var(--toast-glass); backdrop-filter:blur(16px) saturate(160%); -webkit-backdrop-filter:blur(16px) saturate(160%);
+  background:var(--toast-glass); backdrop-filter:blur(18px) saturate(180%); -webkit-backdrop-filter:blur(18px) saturate(180%);
   color:var(--bg); border-radius:var(--radius-sm); padding:13px 16px;
   display:none; align-items:center; justify-content:space-between; font-size:13px; z-index:60;
 }
@@ -300,7 +310,7 @@ button,input,select{font-family:inherit; color:inherit;}
 <body>
 
 <div class="config-panel" id="configPanel" style="display: none;">
-  <div><strong>☁️ 填入 Supabase 連線資訊：</strong></div>
+  <div><strong><svg class="icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M17.5 19H6a4 4 0 1 1 .9-7.9A5.5 5.5 0 0 1 17.5 10a3.5 3.5 0 0 1 0 9Z"/></svg> 填入 Supabase 連線資訊：</strong></div>
   <input type="text" id="dbUrl" placeholder="請貼上 Supabase Project URL">
   <input type="password" id="dbKey" placeholder="請貼上 Supabase Anon Key">
   <button class="btn primary" style="padding:8px;" onclick="saveConfigKeys()">儲存連線並載入</button>
@@ -316,7 +326,7 @@ button,input,select{font-family:inherit; color:inherit;}
       <div class="sub" id="barSub">2026 年度總覽</div>
     </div>
   </div>
-  <button class="icon-btn" onclick="switchView('settings')" aria-label="設定">⚙️</button>
+  <button class="icon-btn" onclick="switchView('settings')" aria-label="設定"><svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><circle cx="9" cy="6" r="2"/><path d="M4 12h16"/><circle cx="15" cy="12" r="2"/><path d="M4 18h16"/><circle cx="8" cy="18" r="2"/></svg></button>
 </div>
 
 <div id="root">
@@ -327,13 +337,13 @@ button,input,select{font-family:inherit; color:inherit;}
 
 <div class="bottom-nav">
   <button class="nav-btn active" id="btn-dashboard" onclick="switchView('dashboard')">
-    <span class="nav-icon">📊</span><span>總覽</span>
+    <span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V10"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M4 19h16"/></svg></span><span>總覽</span>
   </button>
   <button class="nav-btn" id="btn-ledger" onclick="switchView('ledger')">
-    <span class="nav-icon">📥</span><span>記帳</span>
+    <span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg></span><span>記帳</span>
   </button>
   <button class="nav-btn" id="btn-settings" onclick="switchView('settings')">
-    <span class="nav-icon">⚙️</span><span>設定</span>
+    <span class="nav-icon"><svg class="icon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><circle cx="9" cy="6" r="2"/><path d="M4 12h16"/><circle cx="15" cy="12" r="2"/><path d="M4 18h16"/><circle cx="8" cy="18" r="2"/></svg></span><span>設定</span>
   </button>
 </div>
 
@@ -373,7 +383,7 @@ button,input,select{font-family:inherit; color:inherit;}
 </div>
 
 <script>
-const MONTHS = ['4','5','6','7','8','9','10','11','12'];
+const MONTHS = ['1','2','3','4','5','6','7','8','9','10','11','12'];
 const MONTH_LABEL = m => m + '月';
 const MAIN_CATS = ['食材伙食','休閒娛樂','固定支出'];
 const ALL_CATS = ['食材伙食','休閒娛樂','固定支出','備註細項'];
@@ -381,11 +391,32 @@ const DASH_CATS = ['食材伙食','休閒娛樂','固定支出','備註細項'];
 const CAT_COLOR = {'食材伙食':'var(--food)','休閒娛樂':'var(--fun)','固定支出':'var(--fixed)','備註細項':'var(--misc)'};
 const CAT_LABEL = {'食材伙食':'食材伙食','休閒娛樂':'休閒娛樂','固定支出':'固定支出','備註細項':'其他'};
 
+const ICON_PATHS = {
+  dashboard: '<path d="M4 19V10"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M4 19h16"/>',
+  ledger: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/>',
+  settings: '<path d="M4 6h16"/><circle cx="9" cy="6" r="2" fill="var(--icon-fill,none)"/><path d="M4 12h16"/><circle cx="15" cy="12" r="2" fill="var(--icon-fill,none)"/><path d="M4 18h16"/><circle cx="8" cy="18" r="2" fill="var(--icon-fill,none)"/>',
+  plane: '<path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9 22 2Z"/>',
+  house: '<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  trash: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+  cloud: '<path d="M17.5 19H6a4 4 0 1 1 .9-7.9A5.5 5.5 0 0 1 17.5 10a3.5 3.5 0 0 1 0 9Z"/>',
+  check: '<circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 5-5"/>',
+  warning: '<path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v5"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/>',
+  chevronLeft: '<path d="M15 18l-6-6 6-6"/>',
+  chevronRight: '<path d="M9 18l6-6-6-6"/>'
+};
+function icon(name, size){
+  size = size || 18;
+  return `<svg class="icon" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name]||''}</svg>`;
+}
+
 function seedData(){
   return {
     paymentMethods: ['玉山刷卡','富邦刷卡','中信簽帳','兆豐轉帳','台新刷卡','其他消費'],
     budgets: {'食材伙食':38000,'休閒娛樂':10000,'固定支出':12000},
+    dashboardTitle: '2026 年度總覽',
     income: {
+      '1':{xuan:0, wei:0}, '2':{xuan:0, wei:0}, '3':{xuan:0, wei:0},
       '4':{xuan:103000, wei:0}, '5':{xuan:103000, wei:0}, '6':{xuan:103000, wei:0},
       '7':{xuan:103000, wei:34000}, '8':{xuan:103000, wei:47000}, '9':{xuan:103000, wei:47000},
       '10':{xuan:103000, wei:47000}, '11':{xuan:103000, wei:47000}, '12':{xuan:103000, wei:47000}
@@ -420,6 +451,24 @@ function seedData(){
   };
 }
 
+function blankState(){
+  const income = {};
+  MONTHS.forEach(m=>{ income[m] = {xuan:0, wei:0}; });
+  return {
+    paymentMethods: ['現金'],
+    budgets: {'食材伙食':0,'休閒娛樂':0,'固定支出':0},
+    dashboardTitle: '2026 年度總覽',
+    income,
+    bonus: 0,
+    annualGoal: 1000000,
+    wishlist: {
+      travel: {target:100000, threshold:70000, manualExtra:0},
+      house: {target:6000000, manualExtra:0}
+    },
+    transactions: []
+  };
+}
+
 let state = null;
 let currentView = 'dashboard';
 let settingsReturnView = 'dashboard';
@@ -428,6 +477,7 @@ let lastDeleted = null;
 let snackTimer = null;
 let supabaseClient = null;
 let manualExtraEditing = {travel:false, house:false};
+let resetConfirmArmed = false;
 
 function checkKeys() {
   const url = localStorage.getItem('sb_url');
@@ -486,8 +536,20 @@ function handleRemoteStateChange(newContent){
   if (!state) { state = newContent; render(); return; }
   if (!deepEqual(state, newContent)) {
     const message = describeStateDiff(state, newContent);
+    // 若使用者正在編輯「手動加碼」輸入框，先保留目前輸入中的值，重繪後再還原，避免被遠端更新蓋掉
+    const preserved = {};
+    ['travel','house'].forEach(k=>{
+      if(manualExtraEditing[k]){
+        const el = document.getElementById('manualExtraInput-'+k);
+        if(el) preserved[k] = el.value;
+      }
+    });
     state = newContent;
     render();
+    Object.keys(preserved).forEach(k=>{
+      const el = document.getElementById('manualExtraInput-'+k);
+      if(el) el.value = preserved[k];
+    });
     pushNotify(message || '資料已更新（其他裝置變更）');
   }
 }
@@ -703,11 +765,21 @@ function switchView(v){
   if(v !== 'dashboard'){
     manualExtraEditing = {travel:false, house:false};
   }
+  if(v !== 'settings'){
+    resetConfirmArmed = false;
+  }
   currentView = v;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.id===`btn-${v}`));
   document.getElementById('fabBtn').style.display = (v==='ledger' || v==='dashboard') ? 'flex' : 'none';
-  document.getElementById('barSub').textContent = v==='dashboard' ? '2026 年度總覽' : v==='ledger' ? MONTH_LABEL(currentMonth)+' 記帳' : '設定';
   render();
+}
+
+function updateBarSub(){
+  const el = document.getElementById('barSub');
+  if(!el) return;
+  el.textContent = currentView==='dashboard' ? (state.dashboardTitle || '2026 年度總覽')
+    : currentView==='ledger' ? MONTH_LABEL(currentMonth)+' 記帳'
+    : '設定';
 }
 
 function render(){
@@ -716,6 +788,7 @@ function render(){
   if(currentView==='dashboard') root.innerHTML = renderDashboard();
   else if(currentView==='ledger') root.innerHTML = renderLedger();
   else root.innerHTML = renderSettings();
+  updateBarSub();
 }
 
 function renderDashboard(){
@@ -787,9 +860,9 @@ function renderDashboard(){
     </div>
 
     <div class="card">
-      <div class="card-title">✈️ 願望清單</div>
+      <div class="card-title" style="gap:6px;">${icon('plane',15)} 願望清單</div>
       <div class="wish-item">
-        <div class="wish-top"><span class="wish-name">出國基金 ✈️</span><span class="wish-amt">NT$ ${fmt(tSaved)} / ${fmt(travel.target)}</span></div>
+        <div class="wish-top"><span class="wish-name" style="display:inline-flex; align-items:center; gap:6px;">${icon('plane',14)} 出國基金</span><span class="wish-amt">NT$ ${fmt(tSaved)} / ${fmt(travel.target)}</span></div>
         <div class="bar-track"><div class="bar-fill" style="width:${(tProg*100).toFixed(1)}%"></div></div>
         <div style="font-size:11px; color:var(--text-3); margin-top:6px;">每月可存超過 NT$ ${fmt(travelThreshold)} 的部分，自動納入出國基金</div>
         ${manualExtraEditing.travel ? `
@@ -798,10 +871,10 @@ function renderDashboard(){
           <button class="small-btn" onclick="saveManualExtra('travel')">儲存</button>
           <button class="small-btn" onclick="toggleManualExtraEdit('travel',false)">取消</button>
         </div>` : `
-        <button class="manual-extra-btn" onclick="toggleManualExtraEdit('travel',true)">✏️ 手動加碼：NT$ ${fmt(travel.manualExtra)}</button>`}
+        <button class="manual-extra-btn" onclick="toggleManualExtraEdit('travel',true)">${icon('edit',13)} 手動加碼：NT$ ${fmt(travel.manualExtra)}</button>`}
       </div>
       <div class="wish-item">
-        <div class="wish-top"><span class="wish-name">房子頭期款 🏠</span><span class="wish-amt">NT$ ${fmt(hSaved)} / ${fmt(house.target)}</span></div>
+        <div class="wish-top"><span class="wish-name" style="display:inline-flex; align-items:center; gap:6px;">${icon('house',14)} 房子頭期款</span><span class="wish-amt">NT$ ${fmt(hSaved)} / ${fmt(house.target)}</span></div>
         <div class="bar-track"><div class="bar-fill" style="width:${(hProg*100).toFixed(1)}%"></div></div>
         <div style="font-size:11px; color:var(--text-3); margin-top:6px;">每月可存中，未超過 NT$ ${fmt(travelThreshold)} 的部分，自動存入頭期款</div>
         ${manualExtraEditing.house ? `
@@ -810,7 +883,7 @@ function renderDashboard(){
           <button class="small-btn" onclick="saveManualExtra('house')">儲存</button>
           <button class="small-btn" onclick="toggleManualExtraEdit('house',false)">取消</button>
         </div>` : `
-        <button class="manual-extra-btn" onclick="toggleManualExtraEdit('house',true)">✏️ 手動加碼：NT$ ${fmt(house.manualExtra)}</button>`}
+        <button class="manual-extra-btn" onclick="toggleManualExtraEdit('house',true)">${icon('edit',13)} 手動加碼：NT$ ${fmt(house.manualExtra)}</button>`}
       </div>
       <div style="font-size:11px; color:var(--text-3); margin-top:10px;">目標金額與門檻可至「設定」調整</div>
     </div>
@@ -911,7 +984,7 @@ function renderLedger(){
         ${t.note?`<div class="tx-note">${t.note}</div>`:''}
       </div>
       <div class="tx-amt num">NT$ ${fmt(t.amount)}</div>
-      <button class="tx-del" onclick="deleteTransaction('${t.id}')">🗑️</button>
+      <button class="tx-del" onclick="deleteTransaction('${t.id}')">${icon('trash',15)}</button>
     </div>
   `).join('') : `<div class="empty-hint">這個月還沒有帳目，點右下角＋新增一筆</div>`;
 
@@ -975,7 +1048,7 @@ function renderSettings(){
   return `
   <div class="view active">
     <div class="settings-back-row">
-      <button class="icon-btn" onclick="switchView(settingsReturnView)" aria-label="返回">←</button>
+      <button class="icon-btn" onclick="switchView(settingsReturnView)" aria-label="返回">${icon('chevronLeft',18)}</button>
       <span class="settings-back-title">設定</span>
     </div>
     <div class="card settings-section">
@@ -984,6 +1057,13 @@ function renderSettings(){
         ${themeChip('system','跟隨系統')}
         ${themeChip('light','淺色')}
         ${themeChip('dark','深色')}
+      </div>
+    </div>
+    <div class="card settings-section">
+      <h3>總覽頁標題</h3>
+      <div class="field-group">
+        <label>總覽頁小標題文字（顯示在畫面最上方）</label>
+        <input type="text" value="${state.dashboardTitle||'2026 年度總覽'}" onchange="updateDashboardTitle(this.value)">
       </div>
     </div>
     <div class="card settings-section">
@@ -996,7 +1076,7 @@ function renderSettings(){
     <div class="card settings-section">
       <h3>願望清單設定</h3>
       <div class="field-group">
-        <label>出國基金 ✈️ 目標金額</label>
+        <label style="display:flex; align-items:center; gap:6px;">${icon('plane',13)} 出國基金 目標金額</label>
         <input class="num" type="number" inputmode="decimal" min="0" value="${travel.target}" onchange="updateWishlistField('travel','target',this.value)">
       </div>
       <div class="field-group">
@@ -1004,7 +1084,7 @@ function renderSettings(){
         <input class="num" type="number" inputmode="decimal" min="0" value="${travel.threshold}" onchange="updateWishlistField('travel','threshold',this.value)">
       </div>
       <div class="field-group">
-        <label>房子頭期款 🏠 目標金額</label>
+        <label style="display:flex; align-items:center; gap:6px;">${icon('house',13)} 房子頭期款 目標金額</label>
         <input class="num" type="number" inputmode="decimal" min="0" value="${house.target}" onchange="updateWishlistField('house','target',this.value)">
       </div>
     </div>
@@ -1033,14 +1113,29 @@ function renderSettings(){
       <h3>雲端資料庫設定</h3>
       <button class="small-btn" style="width:100%; background:var(--blue-soft);" onclick="document.getElementById('configPanel').style.display='flex'">編輯 Supabase 連線金鑰</button>
     </div>
+    <div class="card settings-section" style="border-color:var(--red-soft);">
+      <h3 style="color:var(--red);">危險區域</h3>
+      ${resetConfirmArmed ? `
+      <div style="font-size:12.5px; color:var(--red); margin-bottom:12px; line-height:1.6; display:flex; gap:6px; align-items:flex-start;">
+        ${icon('warning',15)}<span>確定要清空所有記帳資料嗎？帳目明細、收入、預算、願望清單設定都會被永久清除，此動作無法復原。</span>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn" style="flex:1;" onclick="toggleResetConfirm(false)">取消，先不要</button>
+        <button class="btn" style="flex:1; background:var(--red); color:#fff; border:none;" onclick="confirmResetAllData()">確認重置</button>
+      </div>
+      ` : `
+      <button class="small-btn" style="width:100%; color:var(--red); border-color:var(--red-soft); display:flex; align-items:center; justify-content:center; gap:6px;" onclick="toggleResetConfirm(true)">${icon('trash',14)} 所有資料重置</button>
+      <div style="font-size:11px; color:var(--text-3); margin-top:8px;">會清空所有帳目、收入、預算與願望清單設定，需要再確認兩次才會真正執行。</div>
+      `}
+    </div>
   </div>`;
 }
 
 function notifSupported(){ return typeof Notification !== 'undefined'; }
 function notifStatusText(){
   if(!notifSupported()) return '此瀏覽器不支援手機系統通知';
-  if(Notification.permission==='granted') return '✅ 已開啟手機通知';
-  if(Notification.permission==='denied') return '⚠️ 通知已被封鎖，請至手機/瀏覽器設定中開啟';
+  if(Notification.permission==='granted') return icon('check',14)+' 已開啟手機通知';
+  if(Notification.permission==='denied') return icon('warning',14)+' 通知已被封鎖，請至手機/瀏覽器設定中開啟';
   return '尚未開啟手機通知，請點下方按鈕開啟';
 }
 function requestNotifPermission(){
@@ -1054,14 +1149,33 @@ function pushNotify(text){
 }
 function notifyChange(text){ showSnackbar(text); pushNotify(text); }
 
-function selectMonth(m){ currentMonth = m; render(); }
+let monthAnimating = false;
+function animateMonthChange(direction, callback){
+  const root = document.getElementById('root');
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!root || monthAnimating || reduceMotion){ callback(); return; }
+  monthAnimating = true;
+  const outClass = direction === 'left' ? 'slide-out-left' : 'slide-out-right';
+  const inClass = direction === 'left' ? 'slide-in-right' : 'slide-in-left';
+  root.classList.remove('slide-in-left','slide-in-right','slide-out-left','slide-out-right');
+  root.classList.add(outClass);
+  setTimeout(()=>{
+    callback();
+    root.classList.remove(outClass);
+    root.classList.add(inClass);
+    setTimeout(()=>{ root.classList.remove(inClass); monthAnimating = false; }, 220);
+  }, 150);
+}
+function selectMonth(m){
+  const oldIdx = MONTHS.indexOf(currentMonth), newIdx = MONTHS.indexOf(m);
+  if(newIdx === oldIdx){ currentMonth = m; render(); return; }
+  animateMonthChange(newIdx > oldIdx ? 'left' : 'right', ()=>{ currentMonth = m; render(); });
+}
 function shiftMonth(delta){
   const idx = MONTHS.indexOf(currentMonth);
   const newIdx = idx + delta;
   if(newIdx < 0 || newIdx >= MONTHS.length) return;
-  currentMonth = MONTHS[newIdx];
-  if(currentView==='ledger') document.getElementById('barSub').textContent = MONTH_LABEL(currentMonth)+' 記帳';
-  render();
+  animateMonthChange(delta > 0 ? 'left' : 'right', ()=>{ currentMonth = MONTHS[newIdx]; render(); });
 }
 function updateGoal(v){ state.annualGoal = Number(v||0); saveState(); render(); notifyChange('已更新年度存款目標'); }
 function updateBonus(v){ state.bonus = Number(v||0); saveState(); render(); notifyChange('已更新年終／獎金'); }
@@ -1072,7 +1186,7 @@ function updateWishlistField(key,field,v){
   const label = field==='target' ? '已更新目標金額' : field==='threshold' ? '已更新每月可存門檻' : '已更新手動加碼金額';
   notifyChange(label);
 }
-function updateIncome(m,who,v){ state.income[m][who] = Number(v||0); saveState(); render(); notifyChange('已更新收入'); }
+function updateIncome(m,who,v){ if(!state.income[m]) state.income[m] = {xuan:0,wei:0}; state.income[m][who] = Number(v||0); saveState(); render(); notifyChange('已更新收入'); }
 function updateBudget(cat,v){ state.budgets[cat] = Number(v||0); saveState(); render(); notifyChange('已更新預算上限'); }
 
 function toggleManualExtraEdit(key, val){
@@ -1086,6 +1200,24 @@ function saveManualExtra(key){
   updateWishlistField(key, 'manualExtra', v);
 }
 
+function toggleResetConfirm(val){
+  resetConfirmArmed = (val!==undefined) ? val : !resetConfirmArmed;
+  render();
+}
+function confirmResetAllData(){
+  const ok = window.confirm('確定要清空所有記帳資料嗎？\n\n所有帳目明細、收入、預算、願望清單設定都會被永久清除，且無法復原。');
+  if(!ok) return;
+  state = blankState();
+  saveState();
+  resetConfirmArmed = false;
+  currentMonth = '7';
+  render();
+  notifyChange('已重置所有資料');
+}
+function updateDashboardTitle(v){
+  state.dashboardTitle = (v||'').trim() || '2026 年度總覽';
+  saveState(); render(); notifyChange('已更新總覽頁標題');
+}
 function addPM(){
   const input = document.getElementById('newPM');
   const v = input.value.trim();
