@@ -14,8 +14,8 @@
   }catch(e){}
 })();
 </script>
-<!-- 使用自己上傳的圖片當作網站 Icon -->
-<link rel="icon" type="image/png" href="icon.png">
+<!-- 使用內嵌方圓圖示，避免依賴外部 icon.png -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='28' y1='20' x2='156' y2='160' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%235B8DEF'/%3E%3Cstop offset='1' stop-color='%23EC6FA0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='42' fill='url(%23g)'/%3E%3Cpath d='M48 132V82M86 132V54M124 132V96M42 132H138' fill='none' stroke='white' stroke-width='14' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <meta charset="UTF-8">
 <!-- 手機全螢幕 App 必備設定 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -26,7 +26,7 @@
 
 <!-- 連結至手機 App 設定檔 -->
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.png">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='28' y1='20' x2='156' y2='160' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%235B8DEF'/%3E%3Cstop offset='1' stop-color='%23EC6FA0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='42' fill='url(%23g)'/%3E%3Cpath d='M48 132V82M86 132V54M124 132V96M42 132H138' fill='none' stroke='white' stroke-width='14' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,19 +98,18 @@ button,input,select{font-family:inherit; color:inherit;}
 .app-bar{
   position:sticky; top:0; z-index:20; background:var(--glass-bar);
   backdrop-filter:blur(30px) saturate(180%); -webkit-backdrop-filter:blur(30px) saturate(180%);
-  padding:calc(14px + env(safe-area-inset-top, 0px)) 18px 10px; display:flex; align-items:center; justify-content:space-between;
+  padding:calc(14px + env(safe-area-inset-top, 0px)) clamp(16px, 4.6vw, 18px) 10px; display:flex; align-items:center; justify-content:space-between; gap:10px;
 }
-.app-bar .brand{display:flex; align-items:center; gap:10px; min-width:0;}
+.app-bar .brand{display:flex; align-items:center; gap:10px; min-width:0; flex:1;}
 .brand-icon{
   width:34px; height:34px; border-radius:10px; flex-shrink:0; overflow:hidden;
   background:linear-gradient(135deg,var(--blue),var(--pink));
   display:flex; align-items:center; justify-content:center;
   box-shadow:0 3px 10px rgba(0,0,0,0.25);
 }
-.brand-icon img{width:100%; height:100%; object-fit:cover; display:block;}
 .brand-icon svg{flex-shrink:0;}
 .app-bar h1{
-  font-size:19px; font-weight:700; margin:0; letter-spacing:-0.2px; white-space:nowrap;
+  font-size:clamp(18px, 4.8vw, 19px); font-weight:700; margin:0; letter-spacing:-0.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   background:linear-gradient(135deg,var(--blue),var(--pink));
   -webkit-background-clip:text; background-clip:text; color:transparent;
 }
@@ -121,9 +120,9 @@ button,input,select{font-family:inherit; color:inherit;}
   display:flex;align-items:center;justify-content:center;
   cursor:pointer; color:var(--text-2); flex-shrink:0;
 }
-.view{display:none; padding:6px 16px 24px; max-width:520px; margin:0 auto;}
+.view{display:none; padding:6px clamp(14px, 4.1vw, 16px) 24px; max-width:520px; margin:0 auto;}
 .view.active{display:block;}
-#root{will-change:transform, opacity;}
+#root,#ledgerContent{will-change:transform, opacity;}
 .slide-out-left{animation:slideOutLeft 0.15s ease forwards;}
 .slide-out-right{animation:slideOutRight 0.15s ease forwards;}
 .slide-in-left{animation:slideInLeft 0.22s ease;}
@@ -135,14 +134,14 @@ button,input,select{font-family:inherit; color:inherit;}
 .card{
   background:var(--glass); backdrop-filter:blur(26px) saturate(180%); -webkit-backdrop-filter:blur(26px) saturate(180%);
   border:0.5px solid var(--border); border-radius:var(--radius);
-  padding:18px; margin-bottom:14px;
+  padding:clamp(16px, 4.55vw, 18px); margin-bottom:14px;
 }
-.card-title{font-size:13px; color:var(--text-2); font-weight:500; margin:0 0 12px; display:flex; align-items:center; justify-content:space-between;}
+.card-title{font-size:13px; color:var(--text-2); font-weight:500; margin:0 0 12px; display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0;}
 .row{display:flex; align-items:center; justify-content:space-between;}
 .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-.stat-box{background:var(--surface-2); border-radius:var(--radius-sm); padding:12px 14px;}
+.stat-box{background:var(--surface-2); border-radius:var(--radius-sm); padding:12px clamp(12px, 3.55vw, 14px); min-width:0;}
 .stat-label{font-size:12px; color:var(--text-3); margin-bottom:4px;}
-.stat-value{font-size:19px; font-weight:600;}
+.stat-value{font-size:clamp(18px, 4.85vw, 19px); font-weight:600; white-space:nowrap;}
 .stat-value.pink{color:var(--pink);}
 .stat-value.blue{color:var(--blue);}
 .stat-value.green{color:var(--green);}
@@ -171,9 +170,9 @@ button,input,select{font-family:inherit; color:inherit;}
 
 .wish-item{margin-bottom:16px;}
 .wish-item:last-child{margin-bottom:0;}
-.wish-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;}
-.wish-name{font-size:14px; font-weight:500;}
-.wish-amt{font-size:12px; color:var(--text-2);}
+.wish-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; gap:8px; min-width:0;}
+.wish-name{font-size:14px; font-weight:500; min-width:0;}
+.wish-amt{font-size:12px; color:var(--text-2); white-space:nowrap; flex-shrink:0;}
 .bar-track{height:8px; background:var(--surface-2); border-radius:5px; overflow:hidden;}
 .bar-fill{height:100%; border-radius:5px; background:linear-gradient(90deg,var(--blue),var(--pink));}
 .wish-edit{display:flex; gap:8px; margin-top:8px; align-items:center;}
@@ -186,9 +185,9 @@ button,input,select{font-family:inherit; color:inherit;}
 
 .stacked-bar{height:14px; border-radius:7px; overflow:hidden; display:flex; margin:6px 0 12px;}
 .legend-list{display:flex; flex-direction:column; gap:8px;}
-.legend-row{display:flex; align-items:center; justify-content:space-between; font-size:13px;}
-.legend-row .left{display:flex; align-items:center; color:var(--text-2);}
-.legend-row .right{font-weight:500;}
+.legend-row{display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:13px;}
+.legend-row .left{display:flex; align-items:center; color:var(--text-2); min-width:0;}
+.legend-row .right{font-weight:500; text-align:right; white-space:nowrap; flex-shrink:0;}
 
 .month-scroll{display:flex; gap:8px; overflow-x:auto; padding:4px 2px 10px; -ms-overflow-style:none; scrollbar-width:none;}
 .month-scroll::-webkit-scrollbar{display:none;}
@@ -203,9 +202,9 @@ button,input,select{font-family:inherit; color:inherit;}
 
 .budget-item{margin-bottom:12px;}
 .budget-item:last-child{margin-bottom:0;}
-.budget-top{display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;}
-.budget-top .name{color:var(--text-2);}
-.budget-top .amt{color:var(--text);}
+.budget-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; font-size:13px; margin-bottom:5px;}
+.budget-top .name{color:var(--text-2); min-width:0; overflow-wrap:anywhere;}
+.budget-top .amt{color:var(--text); text-align:right; white-space:nowrap; flex-shrink:0;}
 
 .tx-row{
   display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:0.5px solid var(--border);
@@ -273,6 +272,17 @@ button,input,select{font-family:inherit; color:inherit;}
   width:100%; padding:11px 12px; border-radius:var(--radius-sm); border:0.5px solid var(--border);
   background:var(--surface-2); font-size:15px;
 }
+.money-input{position:relative; display:flex; align-items:center; width:100%; min-width:0;}
+.money-input .currency-prefix{position:absolute; left:12px; color:var(--text-3); font-size:14px; pointer-events:none; z-index:1;}
+.money-input input{padding-left:28px !important;}
+.money-input.compact{width:110px; flex-shrink:0;}
+.money-input.compact input{width:100%; text-align:right;}
+.money-input.compact .currency-prefix{left:10px;}
+.money-input.flex{flex:1;}
+.money-input.flex input{width:100%;}
+.add-budget-amount{max-width:112px; flex:0 0 112px;}
+.settings-section .field-group input, .settings-section .add-pm-row input{background:transparent;}
+.settings-section .money-input input{background:transparent;}
 .chip-row{display:flex; gap:8px; flex-wrap:wrap;}
 .chip-select{
   padding:8px 14px; border-radius:20px; border:0.5px solid var(--border); background:var(--surface-2);
@@ -285,6 +295,7 @@ button,input,select{font-family:inherit; color:inherit;}
   background:var(--surface-2); font-size:15px; font-weight:600; cursor:pointer; color:var(--text);
 }
 .btn.primary{background:linear-gradient(135deg,var(--blue),var(--pink)); color:#fff; border:none;}
+.btn:disabled{opacity:0.35; cursor:default;}
 
 .settings-section{margin-bottom:18px;}
 .settings-section h3{font-size:14px; margin:0 0 10px; color:var(--text-2); font-weight:500;}
@@ -294,6 +305,34 @@ button,input,select{font-family:inherit; color:inherit;}
 .pm-row:last-child{border-bottom:none;}
 .add-pm-row{display:flex; gap:8px; margin-top:10px;}
 .add-pm-row input{flex:1;}
+.add-entry-row{
+  display:block; margin-top:12px;
+}
+.add-entry-row .field-group{margin-bottom:10px;}
+.add-entry-row .small-btn{width:100%;}
+.settings-section .field-group input,
+.settings-section .field-group select{
+  background:transparent;
+}
+.settings-section .money-input input{background:transparent;}
+.budget-control-row .field-group{margin-bottom:0;}
+.budget-control-row .field-group label{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+}
+.budget-control-row{
+  padding:12px 0; border-bottom:0.5px solid var(--border);
+}
+.budget-control-row:last-of-type{border-bottom:none;}
+.budget-control-head{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;
+}
+.budget-control-title{
+  min-width:0; color:var(--text-2); font-size:13px; overflow-wrap:anywhere; line-height:1.35;
+}
+.delete-mini-btn{
+  flex-shrink:0; padding:6px 10px; border-radius:999px; border:0.5px solid var(--red-soft);
+  background:transparent; color:var(--red); font-size:12px; cursor:pointer;
+}
 .small-btn{padding:9px 14px; border-radius:var(--radius-sm); border:0.5px solid var(--border); background:var(--surface-2); font-size:13px; cursor:pointer;}
 
 .snackbar{
@@ -305,6 +344,23 @@ button,input,select{font-family:inherit; color:inherit;}
 .snackbar.show{display:flex;}
 .snackbar button{background:none; border:none; color:var(--pink); font-weight:600; font-size:13px; cursor:pointer;}
 .loading{padding:60px 20px; text-align:center; color:var(--text-3); font-size:14px; max-width:520px; margin:0 auto;}
+
+@media (max-width: 393px){
+  .app-bar{padding-right:16px; padding-left:16px;}
+  .app-bar .brand{gap:9px;}
+  .app-bar h1{font-size:18.5px;}
+  .brand-icon{width:33px; height:33px; border-radius:10px;}
+  .view{padding-left:16px; padding-right:16px;}
+  .card{padding:17px;}
+  .grid2{gap:8px;}
+  .stat-box{padding:12px;}
+  .stat-label{font-size:11.5px;}
+  .stat-value{font-size:18px;}
+  .legend-row,.budget-top{font-size:12.5px;}
+  .tx-row{gap:10px;}
+  .tx-amt{font-size:14px;}
+  .add-pm-row{gap:7px;}
+}
 </style>
 </head>
 <body>
@@ -318,8 +374,10 @@ button,input,select{font-family:inherit; color:inherit;}
 
 <div class="app-bar">
   <div class="brand">
-    <div class="brand-icon" id="brandIcon">
-      <img src="icon.png" alt="" onerror="brandIconFallback()">
+    <div class="brand-icon" id="brandIcon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 19V10"></path><path d="M11 19V5"></path><path d="M17 19v-7"></path><path d="M4 19h16"></path>
+      </svg>
     </div>
     <div style="min-width:0;">
       <h1 id="barTitle">年度記帳管理 App</h1>
@@ -364,7 +422,7 @@ button,input,select{font-family:inherit; color:inherit;}
     </div>
     <div class="field-group">
       <label>金額</label>
-      <input type="number" id="txAmount" inputmode="decimal" placeholder="0">
+      <div class="money-input"><span class="currency-prefix">$</span><input type="number" id="txAmount" inputmode="decimal" placeholder="0"></div>
     </div>
     <div class="field-group">
       <label>備註（選填）</label>
@@ -385,11 +443,28 @@ button,input,select{font-family:inherit; color:inherit;}
 <script>
 const MONTHS = ['1','2','3','4','5','6','7','8','9','10','11','12'];
 const MONTH_LABEL = m => m + '月';
-const MAIN_CATS = ['食材伙食','休閒娛樂','固定支出'];
-const ALL_CATS = ['食材伙食','休閒娛樂','固定支出','備註細項'];
-const DASH_CATS = ['食材伙食','休閒娛樂','固定支出','備註細項'];
-const CAT_COLOR = {'食材伙食':'var(--food)','休閒娛樂':'var(--fun)','固定支出':'var(--fixed)','備註細項':'var(--misc)'};
-const CAT_LABEL = {'食材伙食':'食材伙食','休閒娛樂':'休閒娛樂','固定支出':'固定支出','備註細項':'其他'};
+const EXTRA_CAT = '備註細項';
+const DEFAULT_CAT_COLOR = {'食材伙食':'var(--food)','休閒娛樂':'var(--fun)','固定支出':'var(--fixed)','備註細項':'var(--misc)'};
+const CAT_COLOR_POOL = ['var(--food)','var(--fun)','var(--fixed)','var(--blue)','var(--pink)','var(--green)','var(--amber)','var(--misc)'];
+const APP_ICON_DATA_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='28' y1='20' x2='156' y2='160' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%235B8DEF'/%3E%3Cstop offset='1' stop-color='%23EC6FA0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='42' fill='url(%23g)'/%3E%3Cpath d='M48 132V82M86 132V54M124 132V96M42 132H138' fill='none' stroke='white' stroke-width='14' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
+function budgetCats(source){ return Object.keys((source || state || {}).budgets || {}); }
+function transactionCats(){
+  const cats = budgetCats();
+  if(!cats.includes(EXTRA_CAT)) cats.push(EXTRA_CAT);
+  return cats;
+}
+function chartCats(){
+  const cats = budgetCats();
+  if(!cats.includes(EXTRA_CAT)) cats.push(EXTRA_CAT);
+  return cats;
+}
+function getCatColor(cat){
+  if(DEFAULT_CAT_COLOR[cat]) return DEFAULT_CAT_COLOR[cat];
+  const idx = Math.abs(String(cat||'').split('').reduce((s,ch)=>s+ch.charCodeAt(0),0)) % CAT_COLOR_POOL.length;
+  return CAT_COLOR_POOL[idx];
+}
+function getCatLabel(cat){ return cat === EXTRA_CAT ? '其他' : cat; }
+function escapeHtml(v){ return String(v ?? '').replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 
 const ICON_PATHS = {
   dashboard: '<path d="M4 19V10"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M4 19h16"/>',
@@ -417,7 +492,7 @@ function seedData(){
     dashboardTitle: '2026 年度總覽',
     income: {
       '1':{xuan:0, wei:0}, '2':{xuan:0, wei:0}, '3':{xuan:0, wei:0},
-      '4':{xuan:103000, wei:0}, '5':{xuan:103000, wei:0}, '6':{xuan:103000, wei:0},
+      '4':{xuan:80000, wei:0}, '5':{xuan:103000, wei:0}, '6':{xuan:103000, wei:25000},
       '7':{xuan:103000, wei:34000}, '8':{xuan:103000, wei:47000}, '9':{xuan:103000, wei:47000},
       '10':{xuan:103000, wei:47000}, '11':{xuan:103000, wei:47000}, '12':{xuan:103000, wei:47000}
     },
@@ -597,7 +672,10 @@ function describeStateDiff(oldS, newS){
     if (Number(oh.target||0) !== Number(nh.target||0)) return '其他裝置更新了房子頭期款目標金額';
     if (Number(oh.manualExtra||0) !== Number(nh.manualExtra||0)) return '其他裝置更新了房子頭期款手動加碼';
 
-    for (const c of MAIN_CATS) {
+    const oldBudgetKeys = Object.keys(oldS.budgets || {});
+    const newBudgetKeys = Object.keys(newS.budgets || {});
+    if (oldBudgetKeys.length !== newBudgetKeys.length || oldBudgetKeys.some(k=>!newBudgetKeys.includes(k))) return '其他裝置更新了預算控制類別';
+    for (const c of newBudgetKeys) {
       if (Number(oldS.budgets?.[c]||0) !== Number(newS.budgets?.[c]||0)) return `其他裝置更新了${c}預算上限`;
     }
     for (const m of MONTHS) {
@@ -655,25 +733,6 @@ if(window.matchMedia){
   });
 }
 
-function brandIconFallback(){
-  const el = document.getElementById('brandIcon');
-  if(!el || el.dataset.fallbackApplied) return;
-  el.dataset.fallbackApplied = '1';
-  el.innerHTML = '';
-  const svgNs = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(svgNs, 'svg');
-  svg.setAttribute('viewBox','0 0 24 24');
-  svg.setAttribute('width','19'); svg.setAttribute('height','19');
-  svg.setAttribute('fill','none'); svg.setAttribute('stroke','#fff');
-  svg.setAttribute('stroke-width','2.2'); svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
-  ['M4 19V10','M10 19V5','M16 19v-7','M4 19h16'].forEach(d=>{
-    const p = document.createElementNS(svgNs,'path');
-    p.setAttribute('d', d);
-    svg.appendChild(p);
-  });
-  el.appendChild(svg);
-}
-
 let swipeStartX = 0, swipeStartY = 0, swipeStartTarget = null;
 function handleSwipeStart(e){
   if(currentView !== 'ledger') return;
@@ -702,7 +761,14 @@ window.addEventListener('DOMContentLoaded', function(){
 });
 
 function monthSpend(m){ return (state.transactions || []).filter(t=>t.month===m).reduce((s,t)=>s+Number(t.amount||0),0); }
-function monthCatSpend(m,cat){ return (state.transactions || []).filter(t=>t.month===m && t.category===cat).reduce((s,t)=>s+Number(t.amount||0),0); }
+function monthCatSpend(m,cat){
+  const budgetSet = new Set(budgetCats());
+  return (state.transactions || []).filter(t=>{
+    if(t.month !== m) return false;
+    if(cat === EXTRA_CAT) return t.category === EXTRA_CAT || !budgetSet.has(t.category);
+    return t.category === cat;
+  }).reduce((s,t)=>s+Number(t.amount||0),0);
+}
 function monthIncome(m){ const inc = (state.income && state.income[m]) || {xuan:0,wei:0}; return Number(inc.xuan||0) + Number(inc.wei||0); }
 function monthBalance(m){ return monthIncome(m) - monthSpend(m); }
 
@@ -789,6 +855,7 @@ function render(){
   else if(currentView==='ledger') root.innerHTML = renderLedger();
   else root.innerHTML = renderSettings();
   updateBarSub();
+  if(currentView==='ledger') syncLedgerMonthBar('auto');
 }
 
 function renderDashboard(){
@@ -801,19 +868,20 @@ function renderDashboard(){
   const goalProgress = goal>0 ? clamp01(totalSaveWithBonus/goal) : 0;
   const distance = Math.max(0, goal - totalSaveWithBonus);
 
-  const catAllTotal = DASH_CATS.reduce((s,c)=>s+annualCatSpend(c),0);
+  const cats = chartCats();
+  const catAllTotal = cats.reduce((s,c)=>s+annualCatSpend(c),0);
 
-  let stackedBar = DASH_CATS.map(c=>{
+  let stackedBar = cats.map(c=>{
     const v = annualCatSpend(c);
     const w = catAllTotal>0 ? (v/catAllTotal*100) : 0;
-    return `<div style="width:${w}%; background:${CAT_COLOR[c]}"></div>`;
+    return `<div style="width:${w}%; background:${getCatColor(c)}"></div>`;
   }).join('');
 
-  let legendRows = DASH_CATS.map(c=>{
+  let legendRows = cats.map(c=>{
     const v = annualCatSpend(c);
     const ofIncome = income>0 ? v/income : 0;
     return `<div class="legend-row">
-      <div class="left"><span class="dot" style="background:${CAT_COLOR[c]}"></span>${CAT_LABEL[c]}</div>
+      <div class="left"><span class="dot" style="background:${getCatColor(c)}"></span>${escapeHtml(getCatLabel(c))}</div>
       <div class="right">NT$ ${fmt(v)} <span style="color:var(--text-3)">${pct(ofIncome)}</span></div>
     </div>`;
   }).join('');
@@ -855,7 +923,7 @@ function renderDashboard(){
       <div style="font-size:11px; color:var(--text-3); margin-top:8px;">已計入 ${lastOccurredLabel()} 的每月可存${bonus?'（含年終／獎金）':''}，目標金額可至「設定」調整</div>
       <div class="bonus-row">
         <label>年終＋獎金</label>
-        <input class="inline-input num" type="number" inputmode="decimal" value="${bonus}" onchange="updateBonus(this.value)">
+        <div class="money-input compact"><span class="currency-prefix">$</span><input class="inline-input num" type="number" inputmode="decimal" value="${bonus}" onchange="updateBonus(this.value)"></div>
       </div>
     </div>
 
@@ -867,7 +935,7 @@ function renderDashboard(){
         <div style="font-size:11px; color:var(--text-3); margin-top:6px;">每月可存超過 NT$ ${fmt(travelThreshold)} 的部分，自動納入出國基金</div>
         ${manualExtraEditing.travel ? `
         <div class="wish-edit">
-          <input id="manualExtraInput-travel" class="inline-input num" style="flex:1;" type="number" inputmode="decimal" value="${travel.manualExtra}" autofocus>
+          <div class="money-input flex"><span class="currency-prefix">$</span><input id="manualExtraInput-travel" class="inline-input num" type="number" inputmode="decimal" value="${travel.manualExtra}" autofocus></div>
           <button class="small-btn" onclick="saveManualExtra('travel')">儲存</button>
           <button class="small-btn" onclick="toggleManualExtraEdit('travel',false)">取消</button>
         </div>` : `
@@ -879,7 +947,7 @@ function renderDashboard(){
         <div style="font-size:11px; color:var(--text-3); margin-top:6px;">每月可存中，未超過 NT$ ${fmt(travelThreshold)} 的部分，自動存入頭期款</div>
         ${manualExtraEditing.house ? `
         <div class="wish-edit">
-          <input id="manualExtraInput-house" class="inline-input num" style="flex:1;" type="number" inputmode="decimal" value="${house.manualExtra}" autofocus>
+          <div class="money-input flex"><span class="currency-prefix">$</span><input id="manualExtraInput-house" class="inline-input num" type="number" inputmode="decimal" value="${house.manualExtra}" autofocus></div>
           <button class="small-btn" onclick="saveManualExtra('house')">儲存</button>
           <button class="small-btn" onclick="toggleManualExtraEdit('house',false)">取消</button>
         </div>` : `
@@ -902,18 +970,19 @@ function renderDashboard(){
 }
 
 function renderCategoryPie(month){
-  const total = DASH_CATS.reduce((s,c)=>s+monthCatSpend(month,c),0);
+  const cats = chartCats();
+  const total = cats.reduce((s,c)=>s+monthCatSpend(month,c),0);
   const size = 150, r = size/2, cx = r, cy = r;
-  const nonZeroCats = DASH_CATS.filter(c=>monthCatSpend(month,c) > 0);
+  const nonZeroCats = cats.filter(c=>monthCatSpend(month,c) > 0);
   let svgInner = '';
 
   if(total <= 0){
     svgInner = `<circle cx="${cx}" cy="${cy}" r="${r-2}" style="fill:var(--surface-2)"></circle>`;
   } else if(nonZeroCats.length === 1){
-    svgInner = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${CAT_COLOR[nonZeroCats[0]]}"></circle>`;
+    svgInner = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${getCatColor(nonZeroCats[0])}"></circle>`;
   } else {
     let cumulative = 0;
-    svgInner = DASH_CATS.map(c=>{
+    svgInner = cats.map(c=>{
       const v = monthCatSpend(month,c);
       if(v <= 0) return '';
       const startAngle = (cumulative/total)*2*Math.PI - Math.PI/2;
@@ -922,7 +991,7 @@ function renderCategoryPie(month){
       const largeArc = (endAngle-startAngle) > Math.PI ? 1 : 0;
       const x1 = (cx + r*Math.cos(startAngle)).toFixed(2), y1 = (cy + r*Math.sin(startAngle)).toFixed(2);
       const x2 = (cx + r*Math.cos(endAngle)).toFixed(2), y2 = (cy + r*Math.sin(endAngle)).toFixed(2);
-      return `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z" fill="${CAT_COLOR[c]}"></path>`;
+      return `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z" fill="${getCatColor(c)}"></path>`;
     }).join('');
   }
   if(total > 0){
@@ -934,11 +1003,11 @@ function renderCategoryPie(month){
        <text x="${cx}" y="${cy+14}" text-anchor="middle" style="fill:var(--text-2); font-size:10px;">本月花費</text>`
     : `<text x="${cx}" y="${cy+5}" text-anchor="middle" style="fill:var(--text-2); font-size:12px;">尚無資料</text>`;
 
-  const legendRows = DASH_CATS.map(c=>{
+  const legendRows = cats.map(c=>{
     const v = monthCatSpend(month,c);
     const ofTotal = total>0 ? v/total : 0;
     return `<div class="legend-row">
-      <div class="left"><span class="dot" style="background:${CAT_COLOR[c]}"></span>${CAT_LABEL[c]}</div>
+      <div class="left"><span class="dot" style="background:${getCatColor(c)}"></span>${escapeHtml(getCatLabel(c))}</div>
       <div class="right">NT$ ${fmt(v)} <span style="color:var(--text-2)">${pct(ofTotal)}</span></div>
     </div>`;
   }).join('');
@@ -954,13 +1023,34 @@ function renderCategoryPie(month){
 }
 
 function renderLedger(){
-  const monthChips = MONTHS.map(m=>`<div class="chip ${m===currentMonth?'active':''}" onclick="selectMonth('${m}')">${MONTH_LABEL(m)}</div>`).join('');
+  return `
+  <div class="view active">
+    ${renderLedgerMonthNav()}
+    <div id="ledgerContent">
+      ${renderLedgerContent()}
+    </div>
+  </div>`;
+}
+
+function renderLedgerMonthNav(){
+  const monthIdx = MONTHS.indexOf(currentMonth);
+  const monthChips = MONTHS.map(m=>`<div class="chip ${m===currentMonth?'active':''}" data-month="${m}" onclick="selectMonth('${m}')">${MONTH_LABEL(m)}</div>`).join('');
+  return `
+    <div class="month-nav-row">
+      <button id="monthPrevBtn" class="icon-btn month-arrow" onclick="shiftMonth(-1)" aria-label="上個月" ${monthIdx<=0?'disabled':''}>‹</button>
+      <div class="month-scroll" id="ledgerMonthScroll" style="flex:1;">${monthChips}</div>
+      <button id="monthNextBtn" class="icon-btn month-arrow" onclick="shiftMonth(1)" aria-label="下個月" ${monthIdx>=MONTHS.length-1?'disabled':''}>›</button>
+    </div>`;
+}
+
+function renderLedgerContent(){
   const spend = monthSpend(currentMonth);
   const income = monthIncome(currentMonth);
   const balance = monthBalance(currentMonth);
   const inc = state.income[currentMonth] || {xuan:0,wei:0};
 
-  const budgetRows = MAIN_CATS.map(c=>{
+  const budgetList = budgetCats();
+  const budgetRows = budgetList.length ? budgetList.map(c=>{
     const spent = monthCatSpend(currentMonth,c);
     const budget = state.budgets[c] || 1;
     const pctRaw = budget>0 ? spent/budget : 0;
@@ -968,34 +1058,27 @@ function renderLedger(){
     const over = spent > budget;
     return `<div class="budget-item">
       <div class="budget-top">
-        <span class="name">${c}</span>
+        <span class="name">${escapeHtml(c)}</span>
         <span class="amt">NT$ ${fmt(spent)} / ${fmt(budget)} <b style="margin-left:4px; font-weight:700; color:${over?'var(--red)':'var(--text-2)'}">${(pctRaw*100).toFixed(0)}%</b></span>
       </div>
-      <div class="bar-track"><div class="bar-fill" style="width:${(p*100).toFixed(1)}%; background:${over?'var(--red)':CAT_COLOR[c]}"></div></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(p*100).toFixed(1)}%; background:${over?'var(--red)':getCatColor(c)}"></div></div>
     </div>`;
-  }).join('');
+  }).join('') : `<div class="empty-hint" style="padding:12px 0;">尚未設定預算類別，可到「設定」新增</div>`;
 
   const txs = (state.transactions || []).filter(t=>t.month===currentMonth);
   const txRows = txs.length ? txs.map(t=>`
     <div class="tx-row">
-      <div class="tx-tag" style="background:${CAT_COLOR[t.category]}"></div>
+      <div class="tx-tag" style="background:${getCatColor(t.category)}"></div>
       <div class="tx-mid">
-        <div class="tx-cat">${t.category} <span style="color:var(--text-3); font-weight:400; font-size:12px;">${t.method}</span></div>
-        ${t.note?`<div class="tx-note">${t.note}</div>`:''}
+        <div class="tx-cat">${escapeHtml(t.category)} <span style="color:var(--text-3); font-weight:400; font-size:12px;">${t.method}</span></div>
+        ${t.note?`<div class="tx-note">${escapeHtml(t.note)}</div>`:''}
       </div>
       <div class="tx-amt num">NT$ ${fmt(t.amount)}</div>
       <button class="tx-del" onclick="deleteTransaction('${t.id}')">${icon('trash',15)}</button>
     </div>
   `).join('') : `<div class="empty-hint">這個月還沒有帳目，點右下角＋新增一筆</div>`;
 
-  const monthIdx = MONTHS.indexOf(currentMonth);
   return `
-  <div class="view active">
-    <div class="month-nav-row">
-      <button class="icon-btn month-arrow" onclick="shiftMonth(-1)" aria-label="上個月" ${monthIdx<=0?'disabled':''}>‹</button>
-      <div class="month-scroll" style="flex:1;">${monthChips}</div>
-      <button class="icon-btn month-arrow" onclick="shiftMonth(1)" aria-label="下個月" ${monthIdx>=MONTHS.length-1?'disabled':''}>›</button>
-    </div>
     <div class="card">
       <div class="grid2">
         <div class="stat-box"><div class="stat-label">當月總花費</div><div class="stat-value pink">NT$ ${fmt(spend)}</div></div>
@@ -1004,11 +1087,11 @@ function renderLedger(){
       <div class="income-edit">
         <div class="field">
           <label>軒 收入</label>
-          <input class="num" type="number" inputmode="decimal" value="${inc.xuan}" onchange="updateIncome('${currentMonth}','xuan',this.value)">
+          <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="number" inputmode="decimal" value="${inc.xuan}" onchange="updateIncome('${currentMonth}','xuan',this.value)"></div>
         </div>
         <div class="field">
           <label>葳 收入</label>
-          <input class="num" type="number" inputmode="decimal" value="${inc.wei}" onchange="updateIncome('${currentMonth}','wei',this.value)">
+          <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="number" inputmode="decimal" value="${inc.wei}" onchange="updateIncome('${currentMonth}','wei',this.value)"></div>
         </div>
       </div>
     </div>
@@ -1020,21 +1103,69 @@ function renderLedger(){
     <div class="card" style="padding-bottom:6px;">
       <div class="card-title">${MONTH_LABEL(currentMonth)} 帳目明細</div>
       ${txRows}
-    </div>
-  </div>`;
+    </div>`;
+}
+
+function renderLedgerContentOnly(){
+  if(currentView !== 'ledger') { render(); return; }
+  const content = document.getElementById('ledgerContent');
+  if(!content){ render(); return; }
+  content.innerHTML = renderLedgerContent();
+  updateBarSub();
+  syncLedgerMonthBar('smooth');
+}
+
+function syncLedgerMonthBar(behavior){
+  if(currentView !== 'ledger') return;
+  const scroll = document.getElementById('ledgerMonthScroll');
+  if(!scroll) return;
+  scroll.querySelectorAll('.chip').forEach(chip=>{
+    chip.classList.toggle('active', chip.dataset.month === currentMonth);
+  });
+  const monthIdx = MONTHS.indexOf(currentMonth);
+  const prev = document.getElementById('monthPrevBtn');
+  const next = document.getElementById('monthNextBtn');
+  if(prev) prev.disabled = monthIdx <= 0;
+  if(next) next.disabled = monthIdx >= MONTHS.length - 1;
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const scrollBehavior = reduceMotion ? 'auto' : (behavior || 'smooth');
+  const doScroll = ()=>scrollActiveLedgerMonth(scrollBehavior);
+  if(typeof requestAnimationFrame === 'function') requestAnimationFrame(doScroll);
+  else setTimeout(doScroll, 0);
+}
+
+function scrollActiveLedgerMonth(behavior){
+  const scroll = document.getElementById('ledgerMonthScroll');
+  if(!scroll) return;
+  const active = scroll.querySelector('.chip.active');
+  if(!active) return;
+  const maxLeft = Math.max(0, scroll.scrollWidth - scroll.clientWidth);
+  const targetLeft = active.offsetLeft - ((scroll.clientWidth - active.offsetWidth) / 2);
+  const left = Math.max(0, Math.min(maxLeft, targetLeft));
+  if(typeof scroll.scrollTo === 'function'){
+    try { scroll.scrollTo({left, behavior}); }
+    catch(e) { scroll.scrollLeft = left; }
+  } else {
+    scroll.scrollLeft = left;
+  }
 }
 
 function renderSettings(){
   const pmRows = (state.paymentMethods || []).map((pm,i)=>`
-    <div class="pm-row"><span>${pm}</span><button class="small-btn" onclick="removePM(${i})">刪除</button></div>
+    <div class="pm-row"><span>${escapeHtml(pm)}</span><button class="small-btn" onclick="removePM(${i})">刪除</button></div>
   `).join('');
 
-  const budgetInputs = MAIN_CATS.map(c=>`
-    <div class="field-group">
-      <label>${c} 預算上限</label>
-      <input class="num" type="number" inputmode="decimal" value="${state.budgets[c]}" onchange="updateBudget('${c}',this.value)">
+  const budgetInputs = budgetCats().map((c,i)=>`
+    <div class="budget-control-row">
+      <div class="field-group">
+        <label>
+          <span>${escapeHtml(c)} 預算上限</span>
+          <button class="delete-mini-btn" type="button" onclick="confirmRemoveBudgetCat(${i})">刪除</button>
+        </label>
+        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="number" inputmode="decimal" value="${state.budgets[c] ?? 0}" onchange="updateBudgetByIndex(${i},this.value)"></div>
+      </div>
     </div>
-  `).join('');
+  `).join('') || `<div class="empty-hint" style="padding:10px 0;">尚未設定預算類別</div>`;
 
   const goal = Number(state.annualGoal||1000000);
   const travelRaw = state.wishlist?.travel || {target:100000, threshold:70000, manualExtra:0};
@@ -1070,34 +1201,49 @@ function renderSettings(){
       <h3>年度目標設定</h3>
       <div class="field-group">
         <label>年度存款目標（含年終／獎金）</label>
-        <input class="num" type="number" inputmode="decimal" min="0" value="${goal}" onchange="updateGoal(this.value)">
+        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="number" inputmode="decimal" min="0" value="${goal}" onchange="updateGoal(this.value)"></div>
       </div>
     </div>
     <div class="card settings-section">
       <h3>願望清單設定</h3>
       <div class="field-group">
         <label style="display:flex; align-items:center; gap:6px;">${icon('plane',13)} 出國基金 目標金額</label>
-        <input class="num" type="number" inputmode="decimal" min="0" value="${travel.target}" onchange="updateWishlistField('travel','target',this.value)">
+        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="number" inputmode="decimal" min="0" value="${travel.target}" onchange="updateWishlistField('travel','target',this.value)"></div>
       </div>
       <div class="field-group">
         <label>每月可存門檻（超過此金額才存入出國基金；未超過的部分自動存入房子頭期款）</label>
-        <input class="num" type="number" inputmode="decimal" min="0" value="${travel.threshold}" onchange="updateWishlistField('travel','threshold',this.value)">
+        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="number" inputmode="decimal" min="0" value="${travel.threshold}" onchange="updateWishlistField('travel','threshold',this.value)"></div>
       </div>
       <div class="field-group">
         <label style="display:flex; align-items:center; gap:6px;">${icon('house',13)} 房子頭期款 目標金額</label>
-        <input class="num" type="number" inputmode="decimal" min="0" value="${house.target}" onchange="updateWishlistField('house','target',this.value)">
+        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="number" inputmode="decimal" min="0" value="${house.target}" onchange="updateWishlistField('house','target',this.value)"></div>
       </div>
     </div>
     <div class="card settings-section">
       <h3>預算控制</h3>
       ${budgetInputs}
+      <div class="add-entry-row">
+        <div class="field-group">
+          <label>新增預算類別</label>
+          <input id="newBudgetCat" type="text" placeholder="例如：交通、保險、寵物">
+        </div>
+        <div class="field-group">
+          <label>預算金額</label>
+          <div class="money-input"><span class="currency-prefix">$</span><input id="newBudgetAmount" class="num" type="number" inputmode="decimal" placeholder="0"></div>
+        </div>
+        <button class="small-btn" onclick="addBudgetCat()">新增預算類別</button>
+      </div>
+      <div style="font-size:11px; color:var(--text-3); margin-top:8px; line-height:1.6;">新增的類別會同步出現在新增帳目、每月圖表與總覽花費結構；刪除類別後，既有舊帳目不會被刪除，會歸到「其他」統計。</div>
     </div>
     <div class="card settings-section">
       <h3>付款方式管理</h3>
       ${pmRows}
-      <div class="add-pm-row">
-        <input id="newPM" type="text" placeholder="新增付款方式">
-        <button class="small-btn" onclick="addPM()">新增</button>
+      <div class="add-entry-row">
+        <div class="field-group">
+          <label>新增付款方式</label>
+          <input id="newPM" type="text" placeholder="例如：信用卡、轉帳、現金">
+        </div>
+        <button class="small-btn" onclick="addPM()">新增付款方式</button>
       </div>
     </div>
     <div class="card settings-section">
@@ -1119,13 +1265,17 @@ function renderSettings(){
       <div style="font-size:12.5px; color:var(--red); margin-bottom:12px; line-height:1.6; display:flex; gap:6px; align-items:flex-start;">
         ${icon('warning',15)}<span>確定要清空所有記帳資料嗎？帳目明細、收入、預算、願望清單設定都會被永久清除，此動作無法復原。</span>
       </div>
+      <div class="field-group" style="margin-bottom:12px;">
+        <label>請手動輸入 delete 才能啟用重置</label>
+        <input id="resetDeleteInput" type="text" placeholder="delete" autocomplete="off" autocapitalize="off" spellcheck="false" oninput="handleResetKeywordInput(this.value)">
+      </div>
       <div style="display:flex; gap:8px;">
         <button class="btn" style="flex:1;" onclick="toggleResetConfirm(false)">取消，先不要</button>
-        <button class="btn" style="flex:1; background:var(--red); color:#fff; border:none;" onclick="confirmResetAllData()">確認重置</button>
+        <button id="resetConfirmBtn" class="btn" style="flex:1; background:var(--red); color:#fff; border:none;" onclick="confirmResetAllData()" disabled>確認重置</button>
       </div>
       ` : `
       <button class="small-btn" style="width:100%; color:var(--red); border-color:var(--red-soft); display:flex; align-items:center; justify-content:center; gap:6px;" onclick="toggleResetConfirm(true)">${icon('trash',14)} 所有資料重置</button>
-      <div style="font-size:11px; color:var(--text-3); margin-top:8px;">會清空所有帳目、收入、預算與願望清單設定，需要再確認兩次才會真正執行。</div>
+      <div style="font-size:11px; color:var(--text-3); margin-top:8px;">會清空所有帳目、收入、預算與願望清單設定；展開後需手動輸入 delete 才會真正執行。</div>
       `}
     </div>
   </div>`;
@@ -1144,7 +1294,7 @@ function requestNotifPermission(){
 }
 function pushNotify(text){
   if(notifSupported() && Notification.permission==='granted'){
-    try{ new Notification('年度記帳管理', { body: text, icon: 'icon.png' }); }catch(e){}
+    try{ new Notification('年度記帳管理', { body: text, icon: APP_ICON_DATA_URL }); }catch(e){}
   }
 }
 function notifyChange(text){ showSnackbar(text); pushNotify(text); }
@@ -1152,30 +1302,31 @@ function notifyChange(text){ showSnackbar(text); pushNotify(text); }
 let monthAnimating = false;
 function animateMonthChange(direction, callback){
   const root = document.getElementById('root');
+  const target = currentView === 'ledger' ? (document.getElementById('ledgerContent') || root) : root;
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(!root || monthAnimating || reduceMotion){ callback(); return; }
+  if(!target || monthAnimating || reduceMotion){ callback(); return; }
   monthAnimating = true;
   const outClass = direction === 'left' ? 'slide-out-left' : 'slide-out-right';
   const inClass = direction === 'left' ? 'slide-in-right' : 'slide-in-left';
-  root.classList.remove('slide-in-left','slide-in-right','slide-out-left','slide-out-right');
-  root.classList.add(outClass);
+  target.classList.remove('slide-in-left','slide-in-right','slide-out-left','slide-out-right');
+  target.classList.add(outClass);
   setTimeout(()=>{
     callback();
-    root.classList.remove(outClass);
-    root.classList.add(inClass);
-    setTimeout(()=>{ root.classList.remove(inClass); monthAnimating = false; }, 220);
+    target.classList.remove(outClass);
+    target.classList.add(inClass);
+    setTimeout(()=>{ target.classList.remove(inClass); monthAnimating = false; }, 220);
   }, 150);
 }
 function selectMonth(m){
   const oldIdx = MONTHS.indexOf(currentMonth), newIdx = MONTHS.indexOf(m);
-  if(newIdx === oldIdx){ currentMonth = m; render(); return; }
-  animateMonthChange(newIdx > oldIdx ? 'left' : 'right', ()=>{ currentMonth = m; render(); });
+  if(newIdx === oldIdx){ syncLedgerMonthBar('smooth'); updateBarSub(); return; }
+  animateMonthChange(newIdx > oldIdx ? 'left' : 'right', ()=>{ currentMonth = m; renderLedgerContentOnly(); });
 }
 function shiftMonth(delta){
   const idx = MONTHS.indexOf(currentMonth);
   const newIdx = idx + delta;
   if(newIdx < 0 || newIdx >= MONTHS.length) return;
-  animateMonthChange(delta > 0 ? 'left' : 'right', ()=>{ currentMonth = MONTHS[newIdx]; render(); });
+  animateMonthChange(delta > 0 ? 'left' : 'right', ()=>{ currentMonth = MONTHS[newIdx]; renderLedgerContentOnly(); });
 }
 function updateGoal(v){ state.annualGoal = Number(v||0); saveState(); render(); notifyChange('已更新年度存款目標'); }
 function updateBonus(v){ state.bonus = Number(v||0); saveState(); render(); notifyChange('已更新年終／獎金'); }
@@ -1188,6 +1339,41 @@ function updateWishlistField(key,field,v){
 }
 function updateIncome(m,who,v){ if(!state.income[m]) state.income[m] = {xuan:0,wei:0}; state.income[m][who] = Number(v||0); saveState(); render(); notifyChange('已更新收入'); }
 function updateBudget(cat,v){ state.budgets[cat] = Number(v||0); saveState(); render(); notifyChange('已更新預算上限'); }
+function updateBudgetByIndex(i,v){
+  const cat = budgetCats()[i];
+  if(!cat) return;
+  updateBudget(cat, v);
+}
+function addBudgetCat(){
+  const nameInput = document.getElementById('newBudgetCat');
+  const amountInput = document.getElementById('newBudgetAmount');
+  const name = nameInput ? nameInput.value.trim() : '';
+  const amount = amountInput ? Number(amountInput.value || 0) : 0;
+  if(!name) return;
+  if(name === EXTRA_CAT){ alert('「備註細項」已保留作為其他類別，請改用其他名稱'); return; }
+  if(Object.prototype.hasOwnProperty.call(state.budgets || {}, name)){ alert('這個預算類別已存在'); return; }
+  if(!state.budgets) state.budgets = {};
+  state.budgets[name] = amount;
+  if(nameInput) nameInput.value = '';
+  if(amountInput) amountInput.value = '';
+  saveState(); render(); notifyChange('已新增預算類別');
+}
+function confirmRemoveBudgetCat(i){
+  const cat = budgetCats()[i];
+  if(!cat) return;
+  const hasHistory = (state.transactions || []).some(t=>t.category === cat);
+  const msg = hasHistory
+    ? `確定要刪除「${cat}」預算類別嗎？\n\n既有帳目不會被刪除，之後會歸到「其他」統計。`
+    : `確定要刪除「${cat}」預算類別嗎？`;
+  if(!window.confirm(msg)) return;
+  removeBudgetCat(i);
+}
+function removeBudgetCat(i){
+  const cat = budgetCats()[i];
+  if(!cat) return;
+  delete state.budgets[cat];
+  saveState(); render(); notifyChange('已刪除預算類別');
+}
 
 function toggleManualExtraEdit(key, val){
   manualExtraEditing[key] = (val !== undefined) ? val : !manualExtraEditing[key];
@@ -1204,9 +1390,16 @@ function toggleResetConfirm(val){
   resetConfirmArmed = (val!==undefined) ? val : !resetConfirmArmed;
   render();
 }
+function handleResetKeywordInput(v){
+  const btn = document.getElementById('resetConfirmBtn');
+  if(btn) btn.disabled = String(v || '').trim() !== 'delete';
+}
 function confirmResetAllData(){
-  const ok = window.confirm('確定要清空所有記帳資料嗎？\n\n所有帳目明細、收入、預算、願望清單設定都會被永久清除，且無法復原。');
-  if(!ok) return;
+  const input = document.getElementById('resetDeleteInput');
+  if(!input || input.value.trim() !== 'delete'){
+    alert('請先手動輸入 delete 才能重置所有資料');
+    return;
+  }
   state = blankState();
   saveState();
   resetConfirmArmed = false;
@@ -1230,19 +1423,21 @@ function removePM(i){ state.paymentMethods.splice(i,1); saveState(); render(); }
 let modalMethod = null, modalCat = null;
 function openModal(){
   modalMethod = state.paymentMethods[0] || '其他消費';
-  modalCat = '食材伙食';
+  modalCat = transactionCats()[0] || EXTRA_CAT;
   const sel = document.getElementById('txMonth');
   sel.innerHTML = MONTHS.map(m=>`<option value="${m}" ${m===currentMonth?'selected':''}>${MONTH_LABEL(m)}</option>`).join('');
   document.getElementById('pmChips').innerHTML = state.paymentMethods.map(pm=>
-    `<div class="chip-select ${pm===modalMethod?'sel':''}" onclick="pickPM('${pm}')">${pm}</div>`).join('');
-  document.getElementById('catChips').innerHTML = ALL_CATS.map(c=>
-    `<div class="chip-select ${c===modalCat?'sel':''}" onclick="pickCat('${c}')">${c}</div>`).join('');
+    `<div class="chip-select ${pm===modalMethod?'sel':''}" onclick="pickPMByText(this)">${escapeHtml(pm)}</div>`).join('');
+  document.getElementById('catChips').innerHTML = transactionCats().map(c=>
+    `<div class="chip-select ${c===modalCat?'sel':''}" onclick="pickCatByText(this)">${escapeHtml(c)}</div>`).join('');
   document.getElementById('txAmount').value = '';
   document.getElementById('txNote').value = '';
   document.getElementById('modalOverlay').classList.add('show');
 }
 function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+function pickPMByText(el){ pickPM(el.textContent); }
 function pickPM(pm){ modalMethod = pm; document.querySelectorAll('#pmChips .chip-select').forEach(el=>el.classList.toggle('sel', el.textContent===pm)); }
+function pickCatByText(el){ pickCat(el.textContent); }
 function pickCat(c){ modalCat = c; document.querySelectorAll('#catChips .chip-select').forEach(el=>el.classList.toggle('sel', el.textContent===c)); }
 
 function saveTransaction(){
