@@ -292,6 +292,16 @@ button,input,select{font-family:inherit; color:inherit;}
   font-size:13px; color:var(--text-2); cursor:pointer;
 }
 .chip-select.sel{background:var(--text); color:var(--bg); border-color:var(--text); font-weight:600;}
+.repeat-option{
+  display:flex !important; align-items:center; gap:9px; margin:2px 0 4px;
+  padding:10px 12px; border-radius:var(--radius-sm); border:0.5px solid var(--border);
+  background:var(--glass-2); cursor:pointer; color:var(--text);
+}
+.repeat-option input{
+  width:16px !important; height:16px; padding:0; margin:0; accent-color:var(--blue); flex-shrink:0;
+}
+.repeat-option span{font-size:13px; font-weight:600;}
+.repeat-hint{font-size:11px; color:var(--text-3); line-height:1.5; margin-top:5px;}
 .modal-actions{display:flex; gap:10px; margin-top:6px;}
 .btn{
   flex:1; padding:13px; border-radius:var(--radius-sm); border:0.5px solid var(--border);
@@ -440,6 +450,13 @@ button,input,select{font-family:inherit; color:inherit;}
     <div class="field-group">
       <label>類別</label>
       <div class="chip-row" id="catChips"></div>
+    </div>
+    <div class="field-group" id="repeatMonthlyGroup" style="display:none;">
+      <label class="repeat-option">
+        <input type="checkbox" id="txRepeatMonthly">
+        <span>每月重複</span>
+      </label>
+      <div class="repeat-hint">勾選後會從選擇月份開始，自動新增同一筆固定支出到後續月份。</div>
     </div>
     <div class="field-group">
       <label>金額</label>
@@ -849,6 +866,15 @@ async function saveState(opts){
   } catch(e) {}
 }
 
+let saveQueue = Promise.resolve();
+function queueSaveState(opts){
+  saveQueue = saveQueue
+    .catch(()=>{})
+    .then(()=>saveState(opts))
+    .catch(()=>{});
+  return saveQueue;
+}
+
 function getThemePref(){ return localStorage.getItem('theme_pref') || 'system'; }
 function getEffectiveTheme(){
   const pref = getThemePref();
@@ -1224,7 +1250,7 @@ function renderLedgerContent(){
       <div class="tx-amt num">NT$ ${fmt(t.amount)}</div>
       <div class="tx-actions">
         <button class="tx-action-btn" aria-label="編輯帳目" onclick="openEditModal('${txId}')">${icon('edit',15)}</button>
-        <button class="tx-action-btn tx-del" aria-label="刪除帳目" onclick="deleteTransaction('${txId}')">${icon('trash',15)}</button>
+        <button class="tx-action-btn tx-del" aria-label="刪除帳目" onclick="confirmDeleteTransaction('${txId}')">${icon('trash',15)}</button>
       </div>
     </div>`;
   }).join('') : `<div class="empty-hint">這個月還沒有帳目，點右下角＋新增一筆</div>`;
@@ -1434,7 +1460,7 @@ function renderSettings(){
       <div style="font-size:11px; color:var(--text-3); margin-top:8px;">會清空所有帳目、收入、預算與願望清單設定；展開後需手動輸入 delete 才會真正執行。</div>
       `}
     </div>
-    <div class="version-note">版本 3.0.6</div>
+    <div class="version-note">版本 3.0.7</div>
   </div>`;
 }
 
@@ -1642,11 +1668,20 @@ function confirmRemovePM(i){
 function removePM(i){ state.paymentMethods.splice(i,1); saveState(); render(); notifyChange('已刪除付款方式'); }
 
 let modalMethod = null, modalCat = null, modalEditId = null;
+let transactionSaving = false;
 function setTransactionModalMode(mode){
   const title = document.getElementById('txModalTitle');
   const saveBtn = document.getElementById('txModalSaveBtn');
   if(title) title.textContent = mode === 'edit' ? '編輯帳目' : '新增一筆帳目';
   if(saveBtn) saveBtn.textContent = mode === 'edit' ? '儲存修改' : '儲存';
+}
+function setTransactionSaving(isSaving){
+  transactionSaving = !!isSaving;
+  const saveBtn = document.getElementById('txModalSaveBtn');
+  if(saveBtn){
+    saveBtn.disabled = transactionSaving;
+    saveBtn.textContent = transactionSaving ? '儲存中…' : (modalEditId === null ? '儲存' : '儲存修改');
+  }
 }
 function renderModalChoices(){
   const methods = [...(state.paymentMethods || [])];
@@ -1657,83 +1692,138 @@ function renderModalChoices(){
     `<div class="chip-select ${pm===modalMethod?'sel':''}" onclick="pickPMByText(this)">${escapeHtml(pm)}</div>`).join('');
   document.getElementById('catChips').innerHTML = cats.map(c=>
     `<div class="chip-select ${c===modalCat?'sel':''}" onclick="pickCatByText(this)">${escapeHtml(c)}</div>`).join('');
+  updateRepeatMonthlyVisibility();
+}
+function updateRepeatMonthlyVisibility(){
+  const group = document.getElementById('repeatMonthlyGroup');
+  const checkbox = document.getElementById('txRepeatMonthly');
+  if(!group) return;
+  const shouldShow = modalEditId === null && modalCat === '固定支出';
+  group.style.display = shouldShow ? 'block' : 'none';
+  if(!shouldShow && checkbox) checkbox.checked = false;
 }
 function openModal(){
+  transactionSaving = false;
   modalEditId = null;
   setTransactionModalMode('add');
+  setTransactionSaving(false);
   modalMethod = state.paymentMethods[0] || '其他消費';
   modalCat = transactionCats()[0] || EXTRA_CAT;
   const sel = document.getElementById('txMonth');
   sel.innerHTML = MONTHS.map(m=>`<option value="${m}" ${m===currentMonth?'selected':''}>${MONTH_LABEL(m)}</option>`).join('');
   renderModalChoices();
+  const repeat = document.getElementById('txRepeatMonthly');
+  if(repeat) repeat.checked = false;
+  updateRepeatMonthlyVisibility();
   document.getElementById('txAmount').value = '';
   document.getElementById('txNote').value = '';
   document.getElementById('modalOverlay').classList.add('show');
 }
 function openEditModal(id){
+  transactionSaving = false;
   const tx = (state.transactions || []).find(t=>String(t.id) === String(id));
   if(!tx) return;
   modalEditId = tx.id;
   setTransactionModalMode('edit');
+  setTransactionSaving(false);
   modalMethod = tx.method || (state.paymentMethods[0] || '其他消費');
   modalCat = tx.category || (transactionCats()[0] || EXTRA_CAT);
   const sel = document.getElementById('txMonth');
   sel.innerHTML = MONTHS.map(m=>`<option value="${m}" ${m===String(tx.month)?'selected':''}>${MONTH_LABEL(m)}</option>`).join('');
   renderModalChoices();
+  const repeat = document.getElementById('txRepeatMonthly');
+  if(repeat) repeat.checked = false;
+  updateRepeatMonthlyVisibility();
   document.getElementById('txAmount').value = moneyValue(tx.amount || 0);
   document.getElementById('txNote').value = tx.note || '';
   document.getElementById('modalOverlay').classList.add('show');
 }
 function closeModal(){
+  setTransactionSaving(false);
   document.getElementById('modalOverlay').classList.remove('show');
+  const repeat = document.getElementById('txRepeatMonthly');
+  if(repeat) repeat.checked = false;
   modalEditId = null;
   setTransactionModalMode('add');
+  updateRepeatMonthlyVisibility();
 }
 function pickPMByText(el){ pickPM(el.textContent); }
 function pickPM(pm){ modalMethod = pm; document.querySelectorAll('#pmChips .chip-select').forEach(el=>el.classList.toggle('sel', el.textContent===pm)); }
 function pickCatByText(el){ pickCat(el.textContent); }
-function pickCat(c){ modalCat = c; document.querySelectorAll('#catChips .chip-select').forEach(el=>el.classList.toggle('sel', el.textContent===c)); }
+function pickCat(c){ modalCat = c; document.querySelectorAll('#catChips .chip-select').forEach(el=>el.classList.toggle('sel', el.textContent===c)); updateRepeatMonthlyVisibility(); }
 
 async function saveTransaction(){
+  if(transactionSaving) return;
   const month = document.getElementById('txMonth').value;
   const amount = parseMoney(document.getElementById('txAmount').value);
   const note = document.getElementById('txNote').value.trim();
   if(!amount || amount<=0){ alert('請輸入金額'); return; }
   const now = Date.now();
+  setTransactionSaving(true);
+
   if(modalEditId !== null){
     const idx = state.transactions.findIndex(t=>String(t.id) === String(modalEditId));
-    if(idx === -1){ alert('找不到這筆帳目，請重新開啟後再試'); return; }
+    if(idx === -1){ setTransactionSaving(false); alert('找不到這筆帳目，請重新開啟後再試'); return; }
     state.transactions[idx] = {...state.transactions[idx], month, method:modalMethod, category:modalCat, amount, note, updatedAt:now};
-    await saveState({mergeTransactions:true});
-    closeModal(); currentMonth = month; switchView('ledger');
+    closeModal();
+    currentMonth = month;
+    switchView('ledger');
+    queueSaveState({mergeTransactions:true}).then(()=>{ if(currentView === 'ledger') render(); });
     pushNotify(`已更新一筆帳目：${modalCat} NT$ ${fmt(amount)}`);
     return;
   }
-  state.transactions.push({ id:makeTransactionId(), month, method:modalMethod, category:modalCat, amount, note, createdAt:now, updatedAt:now });
-  await saveState({mergeTransactions:true});
-  closeModal(); currentMonth = month; switchView('ledger');
-  pushNotify(`已新增一筆帳目：${modalCat} NT$ ${fmt(amount)}`);
+
+  const repeat = document.getElementById('txRepeatMonthly');
+  const shouldRepeatMonthly = modalCat === '固定支出' && repeat && repeat.checked;
+  const startIdx = MONTHS.indexOf(month);
+  const monthsToAdd = shouldRepeatMonthly && startIdx >= 0 ? MONTHS.slice(startIdx) : [month];
+  const newTransactions = monthsToAdd.map(m=>({
+    id:makeTransactionId(), month:m, method:modalMethod, category:modalCat, amount, note, createdAt:now, updatedAt:now
+  }));
+  state.transactions.push(...newTransactions);
+  closeModal();
+  currentMonth = month;
+  switchView('ledger');
+  queueSaveState({mergeTransactions:true}).then(()=>{ if(currentView === 'ledger') render(); });
+  if(shouldRepeatMonthly && monthsToAdd.length > 1){
+    pushNotify(`已新增每月重複固定支出：${modalCat} NT$ ${fmt(amount)}（${monthsToAdd.length}筆）`);
+  } else {
+    pushNotify(`已新增一筆帳目：${modalCat} NT$ ${fmt(amount)}`);
+  }
 }
 
-async function deleteTransaction(id){
+function confirmDeleteTransaction(id){
+  const tx = (state.transactions || []).find(t=>String(t.id)===String(id));
+  if(!tx) return;
+  const title = '確認刪除帳目';
+  const message = `確定要刪除這筆帳目嗎？\n\n${MONTH_LABEL(String(tx.month))}｜${tx.category || '未分類'}｜NT$ ${fmt(tx.amount)}${tx.note ? '\n備註：' + tx.note : ''}`;
+  showConfirmDialog({
+    title,
+    message,
+    confirmText:'確認刪除',
+    onConfirm:function(){ deleteTransaction(id); }
+  });
+}
+
+function deleteTransaction(id){
   const idx = state.transactions.findIndex(t=>String(t.id)===String(id));
   if(idx===-1) return;
   lastDeleted = {item: state.transactions[idx], idx};
   rememberDeletedTransaction(id);
   state.transactions.splice(idx,1);
-  await saveState({mergeTransactions:true, deletedTransactionIds:[id]});
   render();
   showSnackbar('已刪除帳目', true);
   pushNotify('已刪除一筆帳目');
+  queueSaveState({mergeTransactions:true, deletedTransactionIds:[id]}).then(()=>{ if(currentView === 'ledger') render(); });
 }
-async function undoDelete(){
+function undoDelete(){
   if(!lastDeleted) return;
   forgetDeletedTransaction(lastDeleted.item.id);
   state.transactions.splice(lastDeleted.idx, 0, lastDeleted.item);
   const revivedId = lastDeleted.item.id;
   lastDeleted = null;
-  await saveState({mergeTransactions:true, reviveTransactionIds:[revivedId]});
   render(); hideSnackbar();
+  queueSaveState({mergeTransactions:true, reviveTransactionIds:[revivedId]}).then(()=>{ if(currentView === 'ledger') render(); });
 }
 
 function showSnackbar(text, showUndo){
