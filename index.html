@@ -493,8 +493,8 @@ button,input,select{font-family:inherit; color:inherit;}
 </div>
 
 <script>
-const APP_VERSION = '3.0.9';
-const APP_BUILD = '20260714-fixed-expense-edit-series';
+const APP_VERSION = '3.1';
+const APP_BUILD = '20260714-fixed-expense-detach-repeat-current-month';
 const MONTHS = ['1','2','3','4','5','6','7','8','9','10','11','12'];
 const MONTH_LABEL = m => m + '月';
 const EXTRA_CAT = '備註細項';
@@ -1516,7 +1516,7 @@ function renderSettings(){
       <div style="font-size:11px; color:var(--text-3); margin-top:8px;">會清空所有帳目、收入、預算與願望清單設定；展開後需手動輸入 delete 才會真正執行。</div>
       `}
     </div>
-    <div class="version-note">版本 3.0.9</div>
+    <div class="version-note">版本 3.1</div>
   </div>`;
 }
 
@@ -1761,6 +1761,7 @@ function confirmRemovePM(i){
 function removePM(i){ state.paymentMethods.splice(i,1); saveState(); render(); notifyChange('已刪除付款方式'); }
 
 let modalMethod = null, modalCat = null, modalEditId = null;
+let modalOriginalRepeatMonthly = false;
 let transactionSaving = false;
 function setTransactionModalMode(mode){
   const title = document.getElementById('txModalTitle');
@@ -1804,6 +1805,7 @@ function updateRepeatMonthlyVisibility(){
 function openModal(){
   transactionSaving = false;
   modalEditId = null;
+  modalOriginalRepeatMonthly = false;
   setTransactionModalMode('add');
   setTransactionSaving(false);
   modalMethod = state.paymentMethods[0] || '其他消費';
@@ -1830,8 +1832,9 @@ function openEditModal(id){
   const sel = document.getElementById('txMonth');
   sel.innerHTML = MONTHS.map(m=>`<option value="${m}" ${m===String(tx.month)?'selected':''}>${MONTH_LABEL(m)}</option>`).join('');
   renderModalChoices();
+  modalOriginalRepeatMonthly = hasFixedExpenseSeriesRelationship(tx);
   const repeat = document.getElementById('txRepeatMonthly');
-  if(repeat) repeat.checked = hasFixedExpenseSeriesRelationship(tx);
+  if(repeat) repeat.checked = modalOriginalRepeatMonthly;
   updateRepeatMonthlyVisibility();
   document.getElementById('txAmount').value = moneyValue(tx.amount || 0);
   document.getElementById('txNote').value = tx.note || '';
@@ -1843,6 +1846,7 @@ function closeModal(){
   const repeat = document.getElementById('txRepeatMonthly');
   if(repeat) repeat.checked = false;
   modalEditId = null;
+  modalOriginalRepeatMonthly = false;
   setTransactionModalMode('add');
   updateRepeatMonthlyVisibility();
 }
@@ -1866,6 +1870,9 @@ async function saveTransaction(){
     if(idx === -1){ setTransactionSaving(false); alert('找不到這筆帳目，請重新開啟後再試'); return; }
     const originalTx = {...state.transactions[idx]};
     const editedTx = {...state.transactions[idx], month, method:modalMethod, category:modalCat, amount, note, updatedAt:now};
+    if(shouldRepeatMonthly){
+      editedTx.repeatDetached = false;
+    }
     const originalHasFutureSeries = isFixedExpenseCategory(originalTx.category) && hasFutureFixedExpenseSeries(originalTx);
     const canApplySeries = shouldRepeatMonthly && isFixedExpenseCategory(editedTx.category) && txMonthIndex(editedTx) < MONTHS.length - 1;
     const baseLine = `${MONTH_LABEL(String(month))}｜${editedTx.category || '未分類'}｜${editedTx.method || ''}｜NT$ ${fmt(amount)}${note ? '\n備註：' + note : ''}`;
@@ -1882,15 +1889,21 @@ async function saveTransaction(){
       });
       return;
     }
-    if(originalHasFutureSeries && !shouldRepeatMonthly){
+    if(modalOriginalRepeatMonthly && originalHasFutureSeries && !shouldRepeatMonthly){
       const futureCount = futureFixedExpenseSeriesItems(originalTx).length;
       showConfirmDialog({
         title:'確認取消每月重複',
         message:`這筆原本是每月重複固定支出。取消勾選後，本月這筆會保留並套用目前修改；你也可以選擇刪除後續月份相同固定支出，共 ${futureCount} 筆。\n\n${baseLine}`,
         altText:'只儲存本月',
-        onAlt:function(){ commitEditedTransaction(originalTx, editedTx, false, false); },
+        onAlt:function(){
+          editedTx.repeatDetached = true;
+          commitEditedTransaction(originalTx, editedTx, false, false);
+        },
         confirmText:'刪除後續月份',
-        onConfirm:function(){ commitEditedTransaction(originalTx, editedTx, false, true); }
+        onConfirm:function(){
+          editedTx.repeatDetached = true;
+          commitEditedTransaction(originalTx, editedTx, false, true);
+        }
       });
       return;
     }
@@ -1926,6 +1939,8 @@ function commitEditedTransaction(originalTx, editedTx, applySeries, deleteFuture
   let deletedFutureItems = [];
   let deletedFutureIds = [];
   if(applySeries){
+    editedTx.repeatDetached = false;
+    state.transactions[idx] = editedTx;
     repeatAffected = applyMonthlyRepeatFromEditedTransaction(originalTx, editedTx, editedTx.updatedAt || Date.now());
   }
   if(deleteFutureSeries){
@@ -1961,6 +1976,7 @@ function commitEditedTransaction(originalTx, editedTx, applySeries, deleteFuture
 }
 function txMonthIndex(tx){ return MONTHS.indexOf(String(tx?.month || '')); }
 function normalizedTxText(v){ return String(v || '').trim(); }
+function isRepeatDetached(tx){ return tx && tx.repeatDetached === true; }
 function sameExpenseContent(a, b){
   if(!a || !b) return false;
   return normalizedTxText(a.category) === normalizedTxText(b.category)
@@ -1977,6 +1993,7 @@ function applyMonthlyRepeatFromEditedTransaction(originalTx, editedTx, now){
     const targetMonth = MONTHS[i];
     const candidates = (state.transactions || []).filter(t=>
       String(t.id) !== String(editedTx.id)
+      && !isRepeatDetached(t)
       && String(t.month) === targetMonth
       && (sameFixedExpenseSeries(originalTx, t) || sameExpenseContent(editedTx, t))
     );
@@ -1986,6 +2003,7 @@ function applyMonthlyRepeatFromEditedTransaction(originalTx, editedTx, now){
         t.category = editedTx.category;
         t.amount = editedTx.amount;
         t.note = editedTx.note;
+        t.repeatDetached = false;
         t.updatedAt = now;
         affected += 1;
       });
@@ -1997,6 +2015,7 @@ function applyMonthlyRepeatFromEditedTransaction(originalTx, editedTx, now){
         category:editedTx.category,
         amount:editedTx.amount,
         note:editedTx.note,
+        repeatDetached:false,
         createdAt:now,
         updatedAt:now
       });
@@ -2007,6 +2026,7 @@ function applyMonthlyRepeatFromEditedTransaction(originalTx, editedTx, now){
 }
 function sameFixedExpenseSeries(base, tx){
   if(!base || !tx) return false;
+  if(isRepeatDetached(base) || isRepeatDetached(tx)) return false;
   return isFixedExpenseCategory(tx.category)
     && normalizedTxText(tx.category) === normalizedTxText(base.category)
     && normalizedTxText(tx.method) === normalizedTxText(base.method)
@@ -2026,7 +2046,7 @@ function hasFutureFixedExpenseSeries(base){
   return futureFixedExpenseSeriesItems(base).length > 0;
 }
 function hasFixedExpenseSeriesRelationship(base){
-  if(!base || !isFixedExpenseCategory(base.category)) return false;
+  if(!base || !isFixedExpenseCategory(base.category) || isRepeatDetached(base)) return false;
   return (state.transactions || []).some(t=>
     String(t.id) !== String(base.id) && sameFixedExpenseSeries(base, t)
   );
