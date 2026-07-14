@@ -652,13 +652,13 @@ function handleRemoteStateChange(newContent){
         if(el) preserved[k] = el.value;
       }
     });
-    state = newContent;
+    state = mergeIncomingState(state, newContent);
     render();
     Object.keys(preserved).forEach(k=>{
       const el = document.getElementById('manualExtraInput-'+k);
       if(el) el.value = preserved[k];
     });
-    pushNotify(message || '資料已更新（其他裝置變更）');
+    if(message) pushNotify(message);
   }
 }
 
@@ -691,7 +691,14 @@ function describeStateDiff(oldS, newS){
       }
       return '其他裝置新增了一筆帳目';
     }
-    if (newTx.length < oldTx.length) return '其他裝置刪除了一筆帳目';
+    const oldIds = new Set(oldTx.map(t=>txKey(t.id)));
+    const newIds = new Set(newTx.map(t=>txKey(t.id)));
+    const removedIds = Array.from(oldIds).filter(id=>id && !newIds.has(id));
+    if (removedIds.length) {
+      const deletedIds = new Set((newS.deletedTransactionIds || []).map(txKey));
+      if (removedIds.some(id=>deletedIds.has(id))) return '其他裝置刪除了一筆帳目';
+      return '';
+    }
 
     if (Number(oldS.bonus||0) !== Number(newS.bonus||0)) return '其他裝置更新了年終／獎金';
     if (Number(oldS.annualGoal||0) !== Number(newS.annualGoal||0)) return '其他裝置更新了年度存款目標';
@@ -721,6 +728,92 @@ function describeStateDiff(oldS, newS){
   } catch(e) { return '其他裝置更新了資料'; }
 }
 
+function cloneData(obj){
+  try { return JSON.parse(JSON.stringify(obj || {})); }
+  catch(e){ return obj || {}; }
+}
+function getClientId(){
+  let id = localStorage.getItem('client_id');
+  if(!id){
+    id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+    localStorage.setItem('client_id', id);
+  }
+  return id;
+}
+function ensureSyncFields(s){
+  if(!s) return s;
+  if(!Array.isArray(s.transactions)) s.transactions = [];
+  if(!Array.isArray(s.deletedTransactionIds)) s.deletedTransactionIds = [];
+  return s;
+}
+function txKey(id){ return String(id || ''); }
+function uniqueIds(list){
+  const out = [];
+  const seen = new Set();
+  (list || []).forEach(id=>{
+    const k = txKey(id);
+    if(k && !seen.has(k)){ seen.add(k); out.push(k); }
+  });
+  return out;
+}
+function makeTransactionId(){
+  return 't' + Date.now().toString(36) + '-' + getClientId().slice(-6) + '-' + Math.random().toString(36).slice(2,8);
+}
+function txTimestamp(t){ return Number(t?.updatedAt || t?.createdAt || 0); }
+function newerTransaction(a,b){
+  if(!a) return b;
+  if(!b) return a;
+  const at = txTimestamp(a), bt = txTimestamp(b);
+  return bt > at ? b : a;
+}
+function mergeTransactionLists(primary, secondary, deletedIds){
+  const deleted = new Set((deletedIds || []).map(txKey));
+  const map = new Map();
+  const order = [];
+  function put(t){
+    if(!t || !t.id) return;
+    const id = txKey(t.id);
+    if(deleted.has(id)) return;
+    if(!map.has(id)) order.push(id);
+    map.set(id, newerTransaction(map.get(id), t));
+  }
+  (primary || []).forEach(put);
+  (secondary || []).forEach(put);
+  return order.map(id=>map.get(id)).filter(Boolean);
+}
+function mergeStateForSave(localState, remoteState, opts){
+  opts = opts || {};
+  const local = ensureSyncFields(cloneData(localState));
+  const remote = ensureSyncFields(cloneData(remoteState || {}));
+  const revive = new Set((opts.reviveTransactionIds || []).map(txKey));
+  const tombstones = uniqueIds([...(remote.deletedTransactionIds || []), ...(local.deletedTransactionIds || []), ...(opts.deletedTransactionIds || [])])
+    .filter(id=>!revive.has(id));
+  local.deletedTransactionIds = tombstones;
+  local.transactions = mergeTransactionLists(remote.transactions || [], local.transactions || [], tombstones);
+  return local;
+}
+function mergeIncomingState(currentState, incomingState){
+  const current = ensureSyncFields(cloneData(currentState));
+  const incoming = ensureSyncFields(cloneData(incomingState));
+  const tombstones = uniqueIds([...(current.deletedTransactionIds || []), ...(incoming.deletedTransactionIds || [])]);
+  incoming.deletedTransactionIds = tombstones;
+  incoming.transactions = mergeTransactionLists(incoming.transactions || [], current.transactions || [], tombstones);
+  return incoming;
+}
+function rememberDeletedTransaction(id){
+  if(!state) return;
+  ensureSyncFields(state);
+  const ids = new Set((state.deletedTransactionIds || []).map(txKey));
+  ids.add(txKey(id));
+  state.deletedTransactionIds = Array.from(ids).filter(Boolean);
+}
+function forgetDeletedTransaction(id){
+  if(!state) return;
+  ensureSyncFields(state);
+  const target = txKey(id);
+  state.deletedTransactionIds = (state.deletedTransactionIds || []).filter(x=>txKey(x)!==target);
+}
+
 async function loadState(){
   if (!supabaseClient) return;
   try {
@@ -734,12 +827,24 @@ async function loadState(){
   } catch(e) {
     state = seedData();
   }
+  ensureSyncFields(state);
   render();
 }
 
-async function saveState(){
+async function saveState(opts){
   if (!supabaseClient || !state) return;
+  opts = opts || {};
   try {
+    if(opts.mergeTransactions){
+      const { data } = await supabaseClient.from('app_state').select('content').eq('id', 1).single();
+      if(data && data.content){
+        state = mergeStateForSave(state, data.content, opts);
+      } else {
+        state = mergeStateForSave(state, null, opts);
+      }
+    } else {
+      ensureSyncFields(state);
+    }
     await supabaseClient.from('app_state').upsert({ id: 1, content: state });
   } catch(e) {}
 }
@@ -1329,7 +1434,7 @@ function renderSettings(){
       <div style="font-size:11px; color:var(--text-3); margin-top:8px;">會清空所有帳目、收入、預算與願望清單設定；展開後需手動輸入 delete 才會真正執行。</div>
       `}
     </div>
-    <div class="version-note">版本 3.0.5</div>
+    <div class="version-note">版本 3.0.6</div>
   </div>`;
 }
 
@@ -1589,38 +1694,48 @@ function pickPM(pm){ modalMethod = pm; document.querySelectorAll('#pmChips .chip
 function pickCatByText(el){ pickCat(el.textContent); }
 function pickCat(c){ modalCat = c; document.querySelectorAll('#catChips .chip-select').forEach(el=>el.classList.toggle('sel', el.textContent===c)); }
 
-function saveTransaction(){
+async function saveTransaction(){
   const month = document.getElementById('txMonth').value;
   const amount = parseMoney(document.getElementById('txAmount').value);
   const note = document.getElementById('txNote').value.trim();
   if(!amount || amount<=0){ alert('請輸入金額'); return; }
+  const now = Date.now();
   if(modalEditId !== null){
     const idx = state.transactions.findIndex(t=>String(t.id) === String(modalEditId));
     if(idx === -1){ alert('找不到這筆帳目，請重新開啟後再試'); return; }
-    state.transactions[idx] = {...state.transactions[idx], month, method:modalMethod, category:modalCat, amount, note};
-    saveState(); closeModal(); currentMonth = month; switchView('ledger');
+    state.transactions[idx] = {...state.transactions[idx], month, method:modalMethod, category:modalCat, amount, note, updatedAt:now};
+    await saveState({mergeTransactions:true});
+    closeModal(); currentMonth = month; switchView('ledger');
     pushNotify(`已更新一筆帳目：${modalCat} NT$ ${fmt(amount)}`);
     return;
   }
-  state.transactions.push({ id:'t'+Date.now(), month, method:modalMethod, category:modalCat, amount, note });
-  saveState(); closeModal(); currentMonth = month; switchView('ledger');
+  state.transactions.push({ id:makeTransactionId(), month, method:modalMethod, category:modalCat, amount, note, createdAt:now, updatedAt:now });
+  await saveState({mergeTransactions:true});
+  closeModal(); currentMonth = month; switchView('ledger');
   pushNotify(`已新增一筆帳目：${modalCat} NT$ ${fmt(amount)}`);
 }
 
-function deleteTransaction(id){
-  const idx = state.transactions.findIndex(t=>t.id===id);
+async function deleteTransaction(id){
+  const idx = state.transactions.findIndex(t=>String(t.id)===String(id));
   if(idx===-1) return;
   lastDeleted = {item: state.transactions[idx], idx};
+  rememberDeletedTransaction(id);
   state.transactions.splice(idx,1);
-  saveState(); render();
+  await saveState({mergeTransactions:true, deletedTransactionIds:[id]});
+  render();
   showSnackbar('已刪除帳目', true);
   pushNotify('已刪除一筆帳目');
 }
-function undoDelete(){
+async function undoDelete(){
   if(!lastDeleted) return;
+  forgetDeletedTransaction(lastDeleted.item.id);
   state.transactions.splice(lastDeleted.idx, 0, lastDeleted.item);
-  lastDeleted = null; saveState(); render(); hideSnackbar();
+  const revivedId = lastDeleted.item.id;
+  lastDeleted = null;
+  await saveState({mergeTransactions:true, reviveTransactionIds:[revivedId]});
+  render(); hideSnackbar();
 }
+
 function showSnackbar(text, showUndo){
   document.getElementById('snackbarText').textContent = text;
   document.getElementById('snackbarUndo').style.display = showUndo ? 'inline-block' : 'none';
