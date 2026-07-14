@@ -215,10 +215,13 @@ button,input,select{font-family:inherit; color:inherit;}
 .tx-cat{font-size:14px; font-weight:500;}
 .tx-note{font-size:12px; color:var(--text-3); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .tx-amt{font-size:15px; font-weight:600; flex-shrink:0;}
-.tx-del{
+.tx-actions{display:flex; align-items:center; gap:4px; flex-shrink:0;}
+.tx-action-btn{
   width:30px;height:30px; border-radius:50%; border:none; background:transparent;
   color:var(--text-3); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
 }
+.tx-action-btn:hover{background:var(--surface-2);}
+.tx-del{color:var(--text-3);}
 .empty-hint{text-align:center; padding:28px 10px; color:var(--text-3); font-size:13px;}
 
 .income-edit{display:flex; gap:8px; margin-top:10px;}
@@ -310,12 +313,15 @@ button,input,select{font-family:inherit; color:inherit;}
 }
 .add-entry-row .field-group{margin-bottom:10px;}
 .add-entry-row .small-btn{width:100%;}
+.add-entry-row input::placeholder{font-size:12px; color:var(--text-3);}
+.version-note{text-align:center; color:var(--text-3); font-size:11px; padding:0 0 6px; margin-top:-4px;}
 .settings-section .field-group input,
 .settings-section .field-group select{
   background:transparent;
 }
 .settings-section .money-input input{background:transparent;}
-.budget-control-row .field-group{margin-bottom:0;}
+.budget-control-row .field-group{margin-bottom:10px;}
+.budget-control-row .field-group:last-child{margin-bottom:0;}
 .budget-control-row .field-group label{
   display:flex; align-items:center; justify-content:space-between; gap:10px;
 }
@@ -333,6 +339,21 @@ button,input,select{font-family:inherit; color:inherit;}
   flex-shrink:0; padding:6px 10px; border-radius:999px; border:0.5px solid var(--red-soft);
   background:transparent; color:var(--red); font-size:12px; cursor:pointer;
 }
+.confirm-dialog-overlay{
+  position:fixed; inset:0; z-index:70; display:none; align-items:center; justify-content:center;
+  padding:20px; background:rgba(0,0,0,0.42); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+}
+.confirm-dialog-overlay.show{display:flex;}
+.confirm-dialog-card{
+  width:100%; max-width:340px; border:0.5px solid var(--border); border-radius:20px;
+  background:var(--glass); backdrop-filter:blur(32px) saturate(180%); -webkit-backdrop-filter:blur(32px) saturate(180%);
+  padding:18px; box-shadow:0 16px 46px rgba(0,0,0,0.36);
+}
+.confirm-dialog-title{font-size:16px; font-weight:700; margin-bottom:8px;}
+.confirm-dialog-message{font-size:13px; line-height:1.65; color:var(--text-2); margin-bottom:16px; white-space:pre-line;}
+.confirm-dialog-actions{display:flex; gap:10px;}
+.confirm-dialog-actions .btn{padding:11px 12px;}
+.confirm-dialog-actions .danger{background:var(--red); color:#fff; border:none;}
 .small-btn{padding:9px 14px; border-radius:var(--radius-sm); border:0.5px solid var(--border); background:var(--surface-2); font-size:13px; cursor:pointer;}
 
 .snackbar{
@@ -407,7 +428,7 @@ button,input,select{font-family:inherit; color:inherit;}
 
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal-sheet">
-    <h3>新增一筆帳目</h3>
+    <h3 id="txModalTitle">新增一筆帳目</h3>
     <div class="field-group">
       <label>月份</label>
       <select id="txMonth"></select>
@@ -422,7 +443,7 @@ button,input,select{font-family:inherit; color:inherit;}
     </div>
     <div class="field-group">
       <label>金額</label>
-      <div class="money-input"><span class="currency-prefix">$</span><input type="number" id="txAmount" inputmode="decimal" placeholder="0"></div>
+      <div class="money-input"><span class="currency-prefix">$</span><input type="text" id="txAmount" inputmode="decimal" placeholder="0" onblur="formatMoneyField(this)"></div>
     </div>
     <div class="field-group">
       <label>備註（選填）</label>
@@ -430,7 +451,18 @@ button,input,select{font-family:inherit; color:inherit;}
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">取消</button>
-      <button class="btn primary" onclick="saveTransaction()">儲存</button>
+      <button class="btn primary" id="txModalSaveBtn" onclick="saveTransaction()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="confirm-dialog-overlay" id="confirmDialog" onclick="handleConfirmBackdrop(event)">
+  <div class="confirm-dialog-card" role="dialog" aria-modal="true" aria-labelledby="confirmDialogTitle">
+    <div class="confirm-dialog-title" id="confirmDialogTitle">確認刪除</div>
+    <div class="confirm-dialog-message" id="confirmDialogMessage"></div>
+    <div class="confirm-dialog-actions">
+      <button class="btn" id="confirmDialogCancel" type="button" onclick="hideConfirmDialog()">取消</button>
+      <button class="btn danger" id="confirmDialogOk" type="button">確認刪除</button>
     </div>
   </div>
 </div>
@@ -465,6 +497,7 @@ function getCatColor(cat){
 }
 function getCatLabel(cat){ return cat === EXTRA_CAT ? '其他' : cat; }
 function escapeHtml(v){ return String(v ?? '').replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+function escapeJsString(v){ return String(v ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 
 const ICON_PATHS = {
   dashboard: '<path d="M4 19V10"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M4 19h16"/>',
@@ -811,6 +844,14 @@ function houseSaved(){
 }
 
 function fmt(n){ return Math.round(n || 0).toLocaleString('zh-TW'); }
+function parseMoney(v){
+  if(typeof v === 'number') return v;
+  const cleaned = String(v || '').replace(/,/g,'').replace(/\$/g,'').trim();
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
+function moneyValue(v){ return fmt(parseMoney(v)); }
+function formatMoneyField(el){ if(el) el.value = moneyValue(el.value); }
 function fmtCompact(n){
   n = Math.round(n || 0);
   const sign = n < 0 ? '-' : '';
@@ -923,7 +964,7 @@ function renderDashboard(){
       <div style="font-size:11px; color:var(--text-3); margin-top:8px;">已計入 ${lastOccurredLabel()} 的每月可存${bonus?'（含年終／獎金）':''}，目標金額可至「設定」調整</div>
       <div class="bonus-row">
         <label>年終＋獎金</label>
-        <div class="money-input compact"><span class="currency-prefix">$</span><input class="inline-input num" type="number" inputmode="decimal" value="${bonus}" onchange="updateBonus(this.value)"></div>
+        <div class="money-input compact"><span class="currency-prefix">$</span><input class="inline-input num" type="text" inputmode="decimal" value="${moneyValue(bonus)}" onchange="updateBonus(this.value)" onblur="formatMoneyField(this)"></div>
       </div>
     </div>
 
@@ -935,7 +976,7 @@ function renderDashboard(){
         <div style="font-size:11px; color:var(--text-3); margin-top:6px;">每月可存超過 NT$ ${fmt(travelThreshold)} 的部分，自動納入出國基金</div>
         ${manualExtraEditing.travel ? `
         <div class="wish-edit">
-          <div class="money-input flex"><span class="currency-prefix">$</span><input id="manualExtraInput-travel" class="inline-input num" type="number" inputmode="decimal" value="${travel.manualExtra}" autofocus></div>
+          <div class="money-input flex"><span class="currency-prefix">$</span><input id="manualExtraInput-travel" class="inline-input num" type="text" inputmode="decimal" value="${moneyValue(travel.manualExtra)}" onblur="formatMoneyField(this)" autofocus></div>
           <button class="small-btn" onclick="saveManualExtra('travel')">儲存</button>
           <button class="small-btn" onclick="toggleManualExtraEdit('travel',false)">取消</button>
         </div>` : `
@@ -947,7 +988,7 @@ function renderDashboard(){
         <div style="font-size:11px; color:var(--text-3); margin-top:6px;">每月可存中，未超過 NT$ ${fmt(travelThreshold)} 的部分，自動存入頭期款</div>
         ${manualExtraEditing.house ? `
         <div class="wish-edit">
-          <div class="money-input flex"><span class="currency-prefix">$</span><input id="manualExtraInput-house" class="inline-input num" type="number" inputmode="decimal" value="${house.manualExtra}" autofocus></div>
+          <div class="money-input flex"><span class="currency-prefix">$</span><input id="manualExtraInput-house" class="inline-input num" type="text" inputmode="decimal" value="${moneyValue(house.manualExtra)}" onblur="formatMoneyField(this)" autofocus></div>
           <button class="small-btn" onclick="saveManualExtra('house')">儲存</button>
           <button class="small-btn" onclick="toggleManualExtraEdit('house',false)">取消</button>
         </div>` : `
@@ -1066,17 +1107,22 @@ function renderLedgerContent(){
   }).join('') : `<div class="empty-hint" style="padding:12px 0;">尚未設定預算類別，可到「設定」新增</div>`;
 
   const txs = (state.transactions || []).filter(t=>t.month===currentMonth);
-  const txRows = txs.length ? txs.map(t=>`
+  const txRows = txs.length ? txs.map(t=>{
+    const txId = escapeJsString(t.id);
+    return `
     <div class="tx-row">
       <div class="tx-tag" style="background:${getCatColor(t.category)}"></div>
       <div class="tx-mid">
-        <div class="tx-cat">${escapeHtml(t.category)} <span style="color:var(--text-3); font-weight:400; font-size:12px;">${t.method}</span></div>
+        <div class="tx-cat">${escapeHtml(t.category)} <span style="color:var(--text-3); font-weight:400; font-size:12px;">${escapeHtml(t.method)}</span></div>
         ${t.note?`<div class="tx-note">${escapeHtml(t.note)}</div>`:''}
       </div>
       <div class="tx-amt num">NT$ ${fmt(t.amount)}</div>
-      <button class="tx-del" onclick="deleteTransaction('${t.id}')">${icon('trash',15)}</button>
-    </div>
-  `).join('') : `<div class="empty-hint">這個月還沒有帳目，點右下角＋新增一筆</div>`;
+      <div class="tx-actions">
+        <button class="tx-action-btn" aria-label="編輯帳目" onclick="openEditModal('${txId}')">${icon('edit',15)}</button>
+        <button class="tx-action-btn tx-del" aria-label="刪除帳目" onclick="deleteTransaction('${txId}')">${icon('trash',15)}</button>
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty-hint">這個月還沒有帳目，點右下角＋新增一筆</div>`;
 
   return `
     <div class="card">
@@ -1087,11 +1133,11 @@ function renderLedgerContent(){
       <div class="income-edit">
         <div class="field">
           <label>軒 收入</label>
-          <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="number" inputmode="decimal" value="${inc.xuan}" onchange="updateIncome('${currentMonth}','xuan',this.value)"></div>
+          <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="text" inputmode="decimal" value="${moneyValue(inc.xuan)}" onchange="updateIncome('${currentMonth}','xuan',this.value)" onblur="formatMoneyField(this)"></div>
         </div>
         <div class="field">
           <label>葳 收入</label>
-          <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="number" inputmode="decimal" value="${inc.wei}" onchange="updateIncome('${currentMonth}','wei',this.value)"></div>
+          <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="text" inputmode="decimal" value="${moneyValue(inc.wei)}" onchange="updateIncome('${currentMonth}','wei',this.value)" onblur="formatMoneyField(this)"></div>
         </div>
       </div>
     </div>
@@ -1152,17 +1198,22 @@ function scrollActiveLedgerMonth(behavior){
 
 function renderSettings(){
   const pmRows = (state.paymentMethods || []).map((pm,i)=>`
-    <div class="pm-row"><span>${escapeHtml(pm)}</span><button class="small-btn" onclick="removePM(${i})">刪除</button></div>
+    <div class="pm-row"><span>${escapeHtml(pm)}</span><button class="small-btn" onclick="confirmRemovePM(${i})">刪除</button></div>
   `).join('');
 
   const budgetInputs = budgetCats().map((c,i)=>`
     <div class="budget-control-row">
+      <div class="budget-control-head">
+        <div class="budget-control-title">花費類別 ${i+1}</div>
+        <button class="delete-mini-btn" type="button" onclick="confirmRemoveBudgetCat(${i})">刪除</button>
+      </div>
       <div class="field-group">
-        <label>
-          <span>${escapeHtml(c)} 預算上限</span>
-          <button class="delete-mini-btn" type="button" onclick="confirmRemoveBudgetCat(${i})">刪除</button>
-        </label>
-        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="number" inputmode="decimal" value="${state.budgets[c] ?? 0}" onchange="updateBudgetByIndex(${i},this.value)"></div>
+        <label>類別名稱</label>
+        <input type="text" value="${escapeHtml(c)}" onchange="renameBudgetByIndex(${i},this.value)">
+      </div>
+      <div class="field-group">
+        <label>預算上限</label>
+        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="text" inputmode="decimal" value="${moneyValue(state.budgets[c] ?? 0)}" onchange="updateBudgetByIndex(${i},this.value)" onblur="formatMoneyField(this)"></div>
       </div>
     </div>
   `).join('') || `<div class="empty-hint" style="padding:10px 0;">尚未設定預算類別</div>`;
@@ -1201,22 +1252,22 @@ function renderSettings(){
       <h3>年度目標設定</h3>
       <div class="field-group">
         <label>年度存款目標（含年終／獎金）</label>
-        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="number" inputmode="decimal" min="0" value="${goal}" onchange="updateGoal(this.value)"></div>
+        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="text" inputmode="decimal" min="0" value="${moneyValue(goal)}" onchange="updateGoal(this.value)" onblur="formatMoneyField(this)"></div>
       </div>
     </div>
     <div class="card settings-section">
       <h3>願望清單設定</h3>
       <div class="field-group">
         <label style="display:flex; align-items:center; gap:6px;">${icon('plane',13)} 出國基金 目標金額</label>
-        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="number" inputmode="decimal" min="0" value="${travel.target}" onchange="updateWishlistField('travel','target',this.value)"></div>
+        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="text" inputmode="decimal" min="0" value="${moneyValue(travel.target)}" onchange="updateWishlistField('travel','target',this.value)" onblur="formatMoneyField(this)"></div>
       </div>
       <div class="field-group">
         <label>每月可存門檻（超過此金額才存入出國基金；未超過的部分自動存入房子頭期款）</label>
-        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="number" inputmode="decimal" min="0" value="${travel.threshold}" onchange="updateWishlistField('travel','threshold',this.value)"></div>
+        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="text" inputmode="decimal" min="0" value="${moneyValue(travel.threshold)}" onchange="updateWishlistField('travel','threshold',this.value)" onblur="formatMoneyField(this)"></div>
       </div>
       <div class="field-group">
         <label style="display:flex; align-items:center; gap:6px;">${icon('house',13)} 房子頭期款 目標金額</label>
-        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="number" inputmode="decimal" min="0" value="${house.target}" onchange="updateWishlistField('house','target',this.value)"></div>
+        <div class="money-input"><span class="currency-prefix">$</span><input class="num" type="text" inputmode="decimal" min="0" value="${moneyValue(house.target)}" onchange="updateWishlistField('house','target',this.value)" onblur="formatMoneyField(this)"></div>
       </div>
     </div>
     <div class="card settings-section">
@@ -1229,7 +1280,7 @@ function renderSettings(){
         </div>
         <div class="field-group">
           <label>預算金額</label>
-          <div class="money-input"><span class="currency-prefix">$</span><input id="newBudgetAmount" class="num" type="number" inputmode="decimal" placeholder="0"></div>
+          <div class="money-input"><span class="currency-prefix">$</span><input id="newBudgetAmount" class="num" type="text" inputmode="decimal" placeholder="0" onblur="formatMoneyField(this)"></div>
         </div>
         <button class="small-btn" onclick="addBudgetCat()">新增預算類別</button>
       </div>
@@ -1278,6 +1329,7 @@ function renderSettings(){
       <div style="font-size:11px; color:var(--text-3); margin-top:8px;">會清空所有帳目、收入、預算與願望清單設定；展開後需手動輸入 delete 才會真正執行。</div>
       `}
     </div>
+    <div class="version-note">版本 3.0.5</div>
   </div>`;
 }
 
@@ -1328,17 +1380,34 @@ function shiftMonth(delta){
   if(newIdx < 0 || newIdx >= MONTHS.length) return;
   animateMonthChange(delta > 0 ? 'left' : 'right', ()=>{ currentMonth = MONTHS[newIdx]; renderLedgerContentOnly(); });
 }
-function updateGoal(v){ state.annualGoal = Number(v||0); saveState(); render(); notifyChange('已更新年度存款目標'); }
-function updateBonus(v){ state.bonus = Number(v||0); saveState(); render(); notifyChange('已更新年終／獎金'); }
+function updateGoal(v){ state.annualGoal = parseMoney(v); saveState(); render(); notifyChange('已更新年度存款目標'); }
+function updateBonus(v){ state.bonus = parseMoney(v); saveState(); render(); notifyChange('已更新年終／獎金'); }
 function updateWishlistField(key,field,v){
   if(!state.wishlist[key]) state.wishlist[key]={};
-  state.wishlist[key][field] = Number(v||0);
+  state.wishlist[key][field] = parseMoney(v);
   saveState(); render();
   const label = field==='target' ? '已更新目標金額' : field==='threshold' ? '已更新每月可存門檻' : '已更新手動加碼金額';
   notifyChange(label);
 }
-function updateIncome(m,who,v){ if(!state.income[m]) state.income[m] = {xuan:0,wei:0}; state.income[m][who] = Number(v||0); saveState(); render(); notifyChange('已更新收入'); }
-function updateBudget(cat,v){ state.budgets[cat] = Number(v||0); saveState(); render(); notifyChange('已更新預算上限'); }
+function updateIncome(m,who,v){ if(!state.income[m]) state.income[m] = {xuan:0,wei:0}; state.income[m][who] = parseMoney(v); saveState(); render(); notifyChange('已更新收入'); }
+function renameBudgetByIndex(i,v){
+  const oldName = budgetCats()[i];
+  const newName = (v || '').trim();
+  if(!oldName) return;
+  if(!newName){ render(); alert('類別名稱不能空白'); return; }
+  if(newName === oldName) return;
+  if(newName === EXTRA_CAT){ render(); alert('「備註細項」已保留作為其他類別，請改用其他名稱'); return; }
+  if(Object.prototype.hasOwnProperty.call(state.budgets || {}, newName)){ render(); alert('這個預算類別已存在'); return; }
+  const nextBudgets = {};
+  Object.keys(state.budgets || {}).forEach(k=>{
+    nextBudgets[k === oldName ? newName : k] = state.budgets[k];
+  });
+  state.budgets = nextBudgets;
+  (state.transactions || []).forEach(t=>{ if(t.category === oldName) t.category = newName; });
+  if(modalCat === oldName) modalCat = newName;
+  saveState(); render(); notifyChange('已更新花費類別名稱');
+}
+function updateBudget(cat,v){ state.budgets[cat] = parseMoney(v); saveState(); render(); notifyChange('已更新預算上限'); }
 function updateBudgetByIndex(i,v){
   const cat = budgetCats()[i];
   if(!cat) return;
@@ -1348,7 +1417,7 @@ function addBudgetCat(){
   const nameInput = document.getElementById('newBudgetCat');
   const amountInput = document.getElementById('newBudgetAmount');
   const name = nameInput ? nameInput.value.trim() : '';
-  const amount = amountInput ? Number(amountInput.value || 0) : 0;
+  const amount = amountInput ? parseMoney(amountInput.value) : 0;
   if(!name) return;
   if(name === EXTRA_CAT){ alert('「備註細項」已保留作為其他類別，請改用其他名稱'); return; }
   if(Object.prototype.hasOwnProperty.call(state.budgets || {}, name)){ alert('這個預算類別已存在'); return; }
@@ -1365,8 +1434,12 @@ function confirmRemoveBudgetCat(i){
   const msg = hasHistory
     ? `確定要刪除「${cat}」預算類別嗎？\n\n既有帳目不會被刪除，之後會歸到「其他」統計。`
     : `確定要刪除「${cat}」預算類別嗎？`;
-  if(!window.confirm(msg)) return;
-  removeBudgetCat(i);
+  showConfirmDialog({
+    title:'確認刪除預算類別',
+    message:msg,
+    confirmText:'確認刪除',
+    onConfirm:function(){ removeBudgetCat(i); }
+  });
 }
 function removeBudgetCat(i){
   const cat = budgetCats()[i];
@@ -1411,6 +1484,35 @@ function updateDashboardTitle(v){
   state.dashboardTitle = (v||'').trim() || '2026 年度總覽';
   saveState(); render(); notifyChange('已更新總覽頁標題');
 }
+let pendingConfirmAction = null;
+function showConfirmDialog(opts){
+  const overlay = document.getElementById('confirmDialog');
+  const title = document.getElementById('confirmDialogTitle');
+  const message = document.getElementById('confirmDialogMessage');
+  const ok = document.getElementById('confirmDialogOk');
+  if(!overlay || !title || !message || !ok){
+    if(opts && typeof opts.onConfirm === 'function') opts.onConfirm();
+    return;
+  }
+  pendingConfirmAction = (opts && typeof opts.onConfirm === 'function') ? opts.onConfirm : null;
+  title.textContent = opts?.title || '確認刪除';
+  message.textContent = opts?.message || '確定要刪除嗎？';
+  ok.textContent = opts?.confirmText || '確認刪除';
+  ok.onclick = function(){
+    const action = pendingConfirmAction;
+    hideConfirmDialog();
+    if(action) action();
+  };
+  overlay.classList.add('show');
+}
+function hideConfirmDialog(){
+  const overlay = document.getElementById('confirmDialog');
+  if(overlay) overlay.classList.remove('show');
+  pendingConfirmAction = null;
+}
+function handleConfirmBackdrop(e){
+  if(e && e.target && e.target.id === 'confirmDialog') hideConfirmDialog();
+}
 function addPM(){
   const input = document.getElementById('newPM');
   const v = input.value.trim();
@@ -1418,23 +1520,70 @@ function addPM(){
   if(!state.paymentMethods.includes(v)) state.paymentMethods.push(v);
   input.value=''; saveState(); render();
 }
-function removePM(i){ state.paymentMethods.splice(i,1); saveState(); render(); }
+function confirmRemovePM(i){
+  const pm = (state.paymentMethods || [])[i];
+  if(!pm) return;
+  const hasHistory = (state.transactions || []).some(t=>t.method === pm);
+  const msg = hasHistory
+    ? `確定要刪除「${pm}」付款方式嗎？\n\n既有帳目不會被刪除，帳目明細仍會保留原本付款方式名稱。`
+    : `確定要刪除「${pm}」付款方式嗎？`;
+  showConfirmDialog({
+    title:'確認刪除付款方式',
+    message:msg,
+    confirmText:'確認刪除',
+    onConfirm:function(){ removePM(i); }
+  });
+}
+function removePM(i){ state.paymentMethods.splice(i,1); saveState(); render(); notifyChange('已刪除付款方式'); }
 
-let modalMethod = null, modalCat = null;
+let modalMethod = null, modalCat = null, modalEditId = null;
+function setTransactionModalMode(mode){
+  const title = document.getElementById('txModalTitle');
+  const saveBtn = document.getElementById('txModalSaveBtn');
+  if(title) title.textContent = mode === 'edit' ? '編輯帳目' : '新增一筆帳目';
+  if(saveBtn) saveBtn.textContent = mode === 'edit' ? '儲存修改' : '儲存';
+}
+function renderModalChoices(){
+  const methods = [...(state.paymentMethods || [])];
+  if(modalMethod && !methods.includes(modalMethod)) methods.push(modalMethod);
+  const cats = transactionCats();
+  if(modalCat && !cats.includes(modalCat)) cats.push(modalCat);
+  document.getElementById('pmChips').innerHTML = methods.map(pm=>
+    `<div class="chip-select ${pm===modalMethod?'sel':''}" onclick="pickPMByText(this)">${escapeHtml(pm)}</div>`).join('');
+  document.getElementById('catChips').innerHTML = cats.map(c=>
+    `<div class="chip-select ${c===modalCat?'sel':''}" onclick="pickCatByText(this)">${escapeHtml(c)}</div>`).join('');
+}
 function openModal(){
+  modalEditId = null;
+  setTransactionModalMode('add');
   modalMethod = state.paymentMethods[0] || '其他消費';
   modalCat = transactionCats()[0] || EXTRA_CAT;
   const sel = document.getElementById('txMonth');
   sel.innerHTML = MONTHS.map(m=>`<option value="${m}" ${m===currentMonth?'selected':''}>${MONTH_LABEL(m)}</option>`).join('');
-  document.getElementById('pmChips').innerHTML = state.paymentMethods.map(pm=>
-    `<div class="chip-select ${pm===modalMethod?'sel':''}" onclick="pickPMByText(this)">${escapeHtml(pm)}</div>`).join('');
-  document.getElementById('catChips').innerHTML = transactionCats().map(c=>
-    `<div class="chip-select ${c===modalCat?'sel':''}" onclick="pickCatByText(this)">${escapeHtml(c)}</div>`).join('');
+  renderModalChoices();
   document.getElementById('txAmount').value = '';
   document.getElementById('txNote').value = '';
   document.getElementById('modalOverlay').classList.add('show');
 }
-function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+function openEditModal(id){
+  const tx = (state.transactions || []).find(t=>String(t.id) === String(id));
+  if(!tx) return;
+  modalEditId = tx.id;
+  setTransactionModalMode('edit');
+  modalMethod = tx.method || (state.paymentMethods[0] || '其他消費');
+  modalCat = tx.category || (transactionCats()[0] || EXTRA_CAT);
+  const sel = document.getElementById('txMonth');
+  sel.innerHTML = MONTHS.map(m=>`<option value="${m}" ${m===String(tx.month)?'selected':''}>${MONTH_LABEL(m)}</option>`).join('');
+  renderModalChoices();
+  document.getElementById('txAmount').value = moneyValue(tx.amount || 0);
+  document.getElementById('txNote').value = tx.note || '';
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('show');
+  modalEditId = null;
+  setTransactionModalMode('add');
+}
 function pickPMByText(el){ pickPM(el.textContent); }
 function pickPM(pm){ modalMethod = pm; document.querySelectorAll('#pmChips .chip-select').forEach(el=>el.classList.toggle('sel', el.textContent===pm)); }
 function pickCatByText(el){ pickCat(el.textContent); }
@@ -1442,9 +1591,17 @@ function pickCat(c){ modalCat = c; document.querySelectorAll('#catChips .chip-se
 
 function saveTransaction(){
   const month = document.getElementById('txMonth').value;
-  const amount = Number(document.getElementById('txAmount').value||0);
+  const amount = parseMoney(document.getElementById('txAmount').value);
   const note = document.getElementById('txNote').value.trim();
   if(!amount || amount<=0){ alert('請輸入金額'); return; }
+  if(modalEditId !== null){
+    const idx = state.transactions.findIndex(t=>String(t.id) === String(modalEditId));
+    if(idx === -1){ alert('找不到這筆帳目，請重新開啟後再試'); return; }
+    state.transactions[idx] = {...state.transactions[idx], month, method:modalMethod, category:modalCat, amount, note};
+    saveState(); closeModal(); currentMonth = month; switchView('ledger');
+    pushNotify(`已更新一筆帳目：${modalCat} NT$ ${fmt(amount)}`);
+    return;
+  }
   state.transactions.push({ id:'t'+Date.now(), month, method:modalMethod, category:modalCat, amount, note });
   saveState(); closeModal(); currentMonth = month; switchView('ledger');
   pushNotify(`已新增一筆帳目：${modalCat} NT$ ${fmt(amount)}`);
