@@ -459,7 +459,7 @@ button,input,select{font-family:inherit; color:inherit;}
         <input type="checkbox" id="txRepeatMonthly">
         <span>每月重複</span>
       </label>
-      <div class="repeat-hint">勾選後會從選擇月份開始，自動新增同一筆固定支出到後續月份。</div>
+      <div class="repeat-hint" id="repeatMonthlyHint">勾選後會從選擇月份開始，自動新增同一筆固定支出到後續月份。</div>
     </div>
     <div class="field-group">
       <label>金額</label>
@@ -494,7 +494,7 @@ button,input,select{font-family:inherit; color:inherit;}
 
 <script>
 const APP_VERSION = '3.0.8';
-const APP_BUILD = '20260714-cache-sync';
+const APP_BUILD = '20260714-fixed-expense-edit-series';
 const MONTHS = ['1','2','3','4','5','6','7','8','9','10','11','12'];
 const MONTH_LABEL = m => m + '月';
 const EXTRA_CAT = '備註細項';
@@ -1790,9 +1790,15 @@ function renderModalChoices(){
 function updateRepeatMonthlyVisibility(){
   const group = document.getElementById('repeatMonthlyGroup');
   const checkbox = document.getElementById('txRepeatMonthly');
+  const hint = document.getElementById('repeatMonthlyHint');
   if(!group) return;
   const shouldShow = isFixedExpenseCategory(modalCat);
   group.style.display = shouldShow ? 'block' : 'none';
+  if(hint){
+    hint.textContent = modalEditId === null
+      ? '勾選後會從選擇月份開始，自動新增同一筆固定支出到後續月份。'
+      : '勾選後，儲存時可選擇只編輯當月，或將修改套用到後續月份相同固定支出。';
+  }
   if(!shouldShow && checkbox) checkbox.checked = false;
 }
 function openModal(){
@@ -1825,7 +1831,7 @@ function openEditModal(id){
   sel.innerHTML = MONTHS.map(m=>`<option value="${m}" ${m===String(tx.month)?'selected':''}>${MONTH_LABEL(m)}</option>`).join('');
   renderModalChoices();
   const repeat = document.getElementById('txRepeatMonthly');
-  if(repeat) repeat.checked = false;
+  if(repeat) repeat.checked = hasFixedExpenseSeriesRelationship(tx);
   updateRepeatMonthlyVisibility();
   document.getElementById('txAmount').value = moneyValue(tx.amount || 0);
   document.getElementById('txNote').value = tx.note || '';
@@ -1854,32 +1860,32 @@ async function saveTransaction(){
   const now = Date.now();
   const repeat = document.getElementById('txRepeatMonthly');
   const shouldRepeatMonthly = isFixedExpenseCategory(modalCat) && repeat && repeat.checked;
-  setTransactionSaving(true);
 
   if(modalEditId !== null){
     const idx = state.transactions.findIndex(t=>String(t.id) === String(modalEditId));
     if(idx === -1){ setTransactionSaving(false); alert('找不到這筆帳目，請重新開啟後再試'); return; }
     const originalTx = {...state.transactions[idx]};
     const editedTx = {...state.transactions[idx], month, method:modalMethod, category:modalCat, amount, note, updatedAt:now};
-    state.transactions[idx] = editedTx;
-
-    let repeatAffected = 0;
-    if(shouldRepeatMonthly){
-      repeatAffected = applyMonthlyRepeatFromEditedTransaction(originalTx, editedTx, now);
+    const canApplySeries = shouldRepeatMonthly && isFixedExpenseCategory(editedTx.category) && txMonthIndex(editedTx) < MONTHS.length - 1;
+    if(canApplySeries){
+      const startIdx = txMonthIndex(editedTx);
+      const seriesCount = startIdx >= 0 ? (MONTHS.length - startIdx) : 1;
+      const baseLine = `${MONTH_LABEL(String(month))}｜${editedTx.category || '未分類'}｜${editedTx.method || ''}｜NT$ ${fmt(amount)}${note ? '\n備註：' + note : ''}`;
+      showConfirmDialog({
+        title:'確認編輯固定支出',
+        message:`這筆是固定支出，可以只編輯當月該筆，也可以將修改套用到這一筆與後續月份相同固定支出。若後續月份缺少同一筆，系統會自動補上，最多共 ${seriesCount} 筆。\n\n${baseLine}`,
+        altText:'只編輯當月該筆',
+        onAlt:function(){ commitEditedTransaction(originalTx, editedTx, false); },
+        confirmText:'套用此筆與後續',
+        onConfirm:function(){ commitEditedTransaction(originalTx, editedTx, true); }
+      });
+      return;
     }
-
-    closeModal();
-    currentMonth = month;
-    switchView('ledger');
-    queueSaveState({mergeTransactions:true}).then(()=>{ if(currentView === 'ledger') render(); });
-    if(shouldRepeatMonthly && repeatAffected > 0){
-      pushNotify(`已更新並複製每月固定支出：${modalCat} NT$ ${fmt(amount)}（後續 ${repeatAffected} 筆）`);
-    } else {
-      pushNotify(`已更新一筆帳目：${modalCat} NT$ ${fmt(amount)}`);
-    }
+    commitEditedTransaction(originalTx, editedTx, false);
     return;
   }
 
+  setTransactionSaving(true);
   const startIdx = MONTHS.indexOf(month);
   const monthsToAdd = shouldRepeatMonthly && startIdx >= 0 ? MONTHS.slice(startIdx) : [month];
   const newTransactions = monthsToAdd.map(m=>({
@@ -1897,6 +1903,26 @@ async function saveTransaction(){
   }
 }
 
+function commitEditedTransaction(originalTx, editedTx, applySeries){
+  if(transactionSaving) return;
+  const idx = state.transactions.findIndex(t=>String(t.id) === String(editedTx.id));
+  if(idx === -1){ setTransactionSaving(false); alert('找不到這筆帳目，請重新開啟後再試'); return; }
+  setTransactionSaving(true);
+  state.transactions[idx] = editedTx;
+  let repeatAffected = 0;
+  if(applySeries){
+    repeatAffected = applyMonthlyRepeatFromEditedTransaction(originalTx, editedTx, editedTx.updatedAt || Date.now());
+  }
+  closeModal();
+  currentMonth = String(editedTx.month);
+  switchView('ledger');
+  queueSaveState({mergeTransactions:true}).then(()=>{ if(currentView === 'ledger') render(); });
+  if(applySeries && repeatAffected > 0){
+    pushNotify(`已更新固定支出並套用後續月份：${editedTx.category} NT$ ${fmt(editedTx.amount)}（後續 ${repeatAffected} 筆）`);
+  } else {
+    pushNotify(`已更新一筆帳目：${editedTx.category} NT$ ${fmt(editedTx.amount)}`);
+  }
+}
 function txMonthIndex(tx){ return MONTHS.indexOf(String(tx?.month || '')); }
 function normalizedTxText(v){ return String(v || '').trim(); }
 function sameExpenseContent(a, b){
@@ -1950,6 +1976,24 @@ function sameFixedExpenseSeries(base, tx){
     && normalizedTxText(tx.method) === normalizedTxText(base.method)
     && Number(tx.amount || 0) === Number(base.amount || 0)
     && normalizedTxText(tx.note) === normalizedTxText(base.note);
+}
+function futureFixedExpenseSeriesItems(base){
+  if(!base || !isFixedExpenseCategory(base.category)) return [];
+  const startIdx = txMonthIndex(base);
+  if(startIdx < 0) return [];
+  return (state.transactions || []).filter(t=>{
+    const mIdx = txMonthIndex(t);
+    return String(t.id) !== String(base.id) && mIdx > startIdx && sameFixedExpenseSeries(base, t);
+  });
+}
+function hasFutureFixedExpenseSeries(base){
+  return futureFixedExpenseSeriesItems(base).length > 0;
+}
+function hasFixedExpenseSeriesRelationship(base){
+  if(!base || !isFixedExpenseCategory(base.category)) return false;
+  return (state.transactions || []).some(t=>
+    String(t.id) !== String(base.id) && sameFixedExpenseSeries(base, t)
+  );
 }
 function deleteIdsForTransaction(id, mode){
   const base = (state.transactions || []).find(t=>String(t.id)===String(id));
