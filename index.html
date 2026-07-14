@@ -493,7 +493,7 @@ button,input,select{font-family:inherit; color:inherit;}
 </div>
 
 <script>
-const APP_VERSION = '3.0.8';
+const APP_VERSION = '3.0.9';
 const APP_BUILD = '20260714-fixed-expense-edit-series';
 const MONTHS = ['1','2','3','4','5','6','7','8','9','10','11','12'];
 const MONTH_LABEL = m => m + '月';
@@ -1516,7 +1516,7 @@ function renderSettings(){
       <div style="font-size:11px; color:var(--text-3); margin-top:8px;">會清空所有帳目、收入、預算與願望清單設定；展開後需手動輸入 delete 才會真正執行。</div>
       `}
     </div>
-    <div class="version-note">版本 3.0.8</div>
+    <div class="version-note">版本 3.0.9</div>
   </div>`;
 }
 
@@ -1866,22 +1866,35 @@ async function saveTransaction(){
     if(idx === -1){ setTransactionSaving(false); alert('找不到這筆帳目，請重新開啟後再試'); return; }
     const originalTx = {...state.transactions[idx]};
     const editedTx = {...state.transactions[idx], month, method:modalMethod, category:modalCat, amount, note, updatedAt:now};
+    const originalHasFutureSeries = isFixedExpenseCategory(originalTx.category) && hasFutureFixedExpenseSeries(originalTx);
     const canApplySeries = shouldRepeatMonthly && isFixedExpenseCategory(editedTx.category) && txMonthIndex(editedTx) < MONTHS.length - 1;
+    const baseLine = `${MONTH_LABEL(String(month))}｜${editedTx.category || '未分類'}｜${editedTx.method || ''}｜NT$ ${fmt(amount)}${note ? '\n備註：' + note : ''}`;
     if(canApplySeries){
       const startIdx = txMonthIndex(editedTx);
       const seriesCount = startIdx >= 0 ? (MONTHS.length - startIdx) : 1;
-      const baseLine = `${MONTH_LABEL(String(month))}｜${editedTx.category || '未分類'}｜${editedTx.method || ''}｜NT$ ${fmt(amount)}${note ? '\n備註：' + note : ''}`;
       showConfirmDialog({
         title:'確認編輯固定支出',
         message:`這筆是固定支出，可以只編輯當月該筆，也可以將修改套用到這一筆與後續月份相同固定支出。若後續月份缺少同一筆，系統會自動補上，最多共 ${seriesCount} 筆。\n\n${baseLine}`,
         altText:'只編輯當月該筆',
-        onAlt:function(){ commitEditedTransaction(originalTx, editedTx, false); },
+        onAlt:function(){ commitEditedTransaction(originalTx, editedTx, false, false); },
         confirmText:'套用此筆與後續',
-        onConfirm:function(){ commitEditedTransaction(originalTx, editedTx, true); }
+        onConfirm:function(){ commitEditedTransaction(originalTx, editedTx, true, false); }
       });
       return;
     }
-    commitEditedTransaction(originalTx, editedTx, false);
+    if(originalHasFutureSeries && !shouldRepeatMonthly){
+      const futureCount = futureFixedExpenseSeriesItems(originalTx).length;
+      showConfirmDialog({
+        title:'確認取消每月重複',
+        message:`這筆原本是每月重複固定支出。取消勾選後，本月這筆會保留並套用目前修改；你也可以選擇刪除後續月份相同固定支出，共 ${futureCount} 筆。\n\n${baseLine}`,
+        altText:'只儲存本月',
+        onAlt:function(){ commitEditedTransaction(originalTx, editedTx, false, false); },
+        confirmText:'刪除後續月份',
+        onConfirm:function(){ commitEditedTransaction(originalTx, editedTx, false, true); }
+      });
+      return;
+    }
+    commitEditedTransaction(originalTx, editedTx, false, false);
     return;
   }
 
@@ -1903,21 +1916,44 @@ async function saveTransaction(){
   }
 }
 
-function commitEditedTransaction(originalTx, editedTx, applySeries){
+function commitEditedTransaction(originalTx, editedTx, applySeries, deleteFutureSeries){
   if(transactionSaving) return;
   const idx = state.transactions.findIndex(t=>String(t.id) === String(editedTx.id));
   if(idx === -1){ setTransactionSaving(false); alert('找不到這筆帳目，請重新開啟後再試'); return; }
   setTransactionSaving(true);
   state.transactions[idx] = editedTx;
   let repeatAffected = 0;
+  let deletedFutureItems = [];
+  let deletedFutureIds = [];
   if(applySeries){
     repeatAffected = applyMonthlyRepeatFromEditedTransaction(originalTx, editedTx, editedTx.updatedAt || Date.now());
+  }
+  if(deleteFutureSeries){
+    const futureIds = futureFixedExpenseSeriesItems(originalTx).map(t=>txKey(t.id));
+    const futureSet = new Set(futureIds);
+    const remaining = [];
+    (state.transactions || []).forEach((t, rowIdx)=>{
+      if(String(t.id) !== String(editedTx.id) && futureSet.has(txKey(t.id))){
+        deletedFutureItems.push({item:t, idx:rowIdx});
+      }else{
+        remaining.push(t);
+      }
+    });
+    if(deletedFutureItems.length){
+      deletedFutureIds = deletedFutureItems.map(x=>txKey(x.item.id));
+      deletedFutureIds.forEach(rememberDeletedTransaction);
+      lastDeleted = {items: deletedFutureItems};
+      state.transactions = remaining;
+    }
   }
   closeModal();
   currentMonth = String(editedTx.month);
   switchView('ledger');
-  queueSaveState({mergeTransactions:true}).then(()=>{ if(currentView === 'ledger') render(); });
-  if(applySeries && repeatAffected > 0){
+  queueSaveState({mergeTransactions:true, deletedTransactionIds:deletedFutureIds}).then(()=>{ if(currentView === 'ledger') render(); });
+  if(deleteFutureSeries && deletedFutureItems.length){
+    showSnackbar(`已刪除後續 ${deletedFutureItems.length} 筆固定支出`, true);
+    pushNotify(`已更新本月固定支出，並刪除後續 ${deletedFutureItems.length} 筆固定支出`);
+  } else if(applySeries && repeatAffected > 0){
     pushNotify(`已更新固定支出並套用後續月份：${editedTx.category} NT$ ${fmt(editedTx.amount)}（後續 ${repeatAffected} 筆）`);
   } else {
     pushNotify(`已更新一筆帳目：${editedTx.category} NT$ ${fmt(editedTx.amount)}`);
