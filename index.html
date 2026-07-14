@@ -493,7 +493,7 @@ button,input,select{font-family:inherit; color:inherit;}
 </div>
 
 <script>
-const APP_VERSION = '3.0.7';
+const APP_VERSION = '3.0.8';
 const APP_BUILD = '20260714-cache-sync';
 const MONTHS = ['1','2','3','4','5','6','7','8','9','10','11','12'];
 const MONTH_LABEL = m => m + '月';
@@ -1516,7 +1516,7 @@ function renderSettings(){
       <div style="font-size:11px; color:var(--text-3); margin-top:8px;">會清空所有帳目、收入、預算與願望清單設定；展開後需手動輸入 delete 才會真正執行。</div>
       `}
     </div>
-    <div class="version-note">版本 3.0.7</div>
+    <div class="version-note">版本 3.0.8</div>
   </div>`;
 }
 
@@ -1677,6 +1677,8 @@ function showConfirmDialog(opts){
   const title = document.getElementById('confirmDialogTitle');
   const message = document.getElementById('confirmDialogMessage');
   const ok = document.getElementById('confirmDialogOk');
+  const cancel = document.getElementById('confirmDialogCancel');
+  const actions = ok ? ok.parentElement : null;
   if(!overlay || !title || !message || !ok){
     if(opts && typeof opts.onConfirm === 'function') opts.onConfirm();
     return;
@@ -1690,12 +1692,47 @@ function showConfirmDialog(opts){
     hideConfirmDialog();
     if(action) action();
   };
+
+  let alt = document.getElementById('confirmDialogAlt');
+  if(opts && opts.altText && typeof opts.onAlt === 'function'){
+    if(!alt){
+      alt = document.createElement('button');
+      alt.className = 'btn';
+      alt.id = 'confirmDialogAlt';
+      alt.type = 'button';
+      if(actions) actions.insertBefore(alt, ok);
+    }
+    alt.textContent = opts.altText;
+    alt.style.display = 'block';
+    alt.onclick = function(){
+      const action = opts.onAlt;
+      hideConfirmDialog();
+      action();
+    };
+    if(actions) actions.style.flexWrap = 'wrap';
+    if(cancel) cancel.style.flex = '1 1 100%';
+    alt.style.flex = '1 1 0';
+    ok.style.flex = '1 1 0';
+  }else{
+    if(alt){ alt.style.display = 'none'; alt.onclick = null; }
+    if(actions) actions.style.flexWrap = '';
+    if(cancel) cancel.style.flex = '';
+    ok.style.flex = '';
+  }
   overlay.classList.add('show');
 }
 function hideConfirmDialog(){
   const overlay = document.getElementById('confirmDialog');
   if(overlay) overlay.classList.remove('show');
   pendingConfirmAction = null;
+  const alt = document.getElementById('confirmDialogAlt');
+  if(alt){ alt.onclick = null; alt.style.display = 'none'; }
+  const ok = document.getElementById('confirmDialogOk');
+  const cancel = document.getElementById('confirmDialogCancel');
+  const actions = ok ? ok.parentElement : null;
+  if(actions) actions.style.flexWrap = '';
+  if(cancel) cancel.style.flex = '';
+  if(ok) ok.style.flex = '';
 }
 function handleConfirmBackdrop(e){
   if(e && e.target && e.target.id === 'confirmDialog') hideConfirmDialog();
@@ -1754,7 +1791,7 @@ function updateRepeatMonthlyVisibility(){
   const group = document.getElementById('repeatMonthlyGroup');
   const checkbox = document.getElementById('txRepeatMonthly');
   if(!group) return;
-  const shouldShow = modalEditId === null && isFixedExpenseCategory(modalCat);
+  const shouldShow = isFixedExpenseCategory(modalCat);
   group.style.display = shouldShow ? 'block' : 'none';
   if(!shouldShow && checkbox) checkbox.checked = false;
 }
@@ -1815,22 +1852,34 @@ async function saveTransaction(){
   const note = document.getElementById('txNote').value.trim();
   if(!amount || amount<=0){ alert('請輸入金額'); return; }
   const now = Date.now();
+  const repeat = document.getElementById('txRepeatMonthly');
+  const shouldRepeatMonthly = isFixedExpenseCategory(modalCat) && repeat && repeat.checked;
   setTransactionSaving(true);
 
   if(modalEditId !== null){
     const idx = state.transactions.findIndex(t=>String(t.id) === String(modalEditId));
     if(idx === -1){ setTransactionSaving(false); alert('找不到這筆帳目，請重新開啟後再試'); return; }
-    state.transactions[idx] = {...state.transactions[idx], month, method:modalMethod, category:modalCat, amount, note, updatedAt:now};
+    const originalTx = {...state.transactions[idx]};
+    const editedTx = {...state.transactions[idx], month, method:modalMethod, category:modalCat, amount, note, updatedAt:now};
+    state.transactions[idx] = editedTx;
+
+    let repeatAffected = 0;
+    if(shouldRepeatMonthly){
+      repeatAffected = applyMonthlyRepeatFromEditedTransaction(originalTx, editedTx, now);
+    }
+
     closeModal();
     currentMonth = month;
     switchView('ledger');
     queueSaveState({mergeTransactions:true}).then(()=>{ if(currentView === 'ledger') render(); });
-    pushNotify(`已更新一筆帳目：${modalCat} NT$ ${fmt(amount)}`);
+    if(shouldRepeatMonthly && repeatAffected > 0){
+      pushNotify(`已更新並複製每月固定支出：${modalCat} NT$ ${fmt(amount)}（後續 ${repeatAffected} 筆）`);
+    } else {
+      pushNotify(`已更新一筆帳目：${modalCat} NT$ ${fmt(amount)}`);
+    }
     return;
   }
 
-  const repeat = document.getElementById('txRepeatMonthly');
-  const shouldRepeatMonthly = isFixedExpenseCategory(modalCat) && repeat && repeat.checked;
   const startIdx = MONTHS.indexOf(month);
   const monthsToAdd = shouldRepeatMonthly && startIdx >= 0 ? MONTHS.slice(startIdx) : [month];
   const newTransactions = monthsToAdd.map(m=>({
@@ -1848,38 +1897,140 @@ async function saveTransaction(){
   }
 }
 
+function txMonthIndex(tx){ return MONTHS.indexOf(String(tx?.month || '')); }
+function normalizedTxText(v){ return String(v || '').trim(); }
+function sameExpenseContent(a, b){
+  if(!a || !b) return false;
+  return normalizedTxText(a.category) === normalizedTxText(b.category)
+    && normalizedTxText(a.method) === normalizedTxText(b.method)
+    && Number(a.amount || 0) === Number(b.amount || 0)
+    && normalizedTxText(a.note) === normalizedTxText(b.note);
+}
+function applyMonthlyRepeatFromEditedTransaction(originalTx, editedTx, now){
+  if(!isFixedExpenseCategory(editedTx.category)) return 0;
+  const startIdx = txMonthIndex(editedTx);
+  if(startIdx < 0) return 0;
+  let affected = 0;
+  for(let i=startIdx+1; i<MONTHS.length; i++){
+    const targetMonth = MONTHS[i];
+    const candidates = (state.transactions || []).filter(t=>
+      String(t.id) !== String(editedTx.id)
+      && String(t.month) === targetMonth
+      && (sameFixedExpenseSeries(originalTx, t) || sameExpenseContent(editedTx, t))
+    );
+    if(candidates.length){
+      candidates.forEach(t=>{
+        t.method = editedTx.method;
+        t.category = editedTx.category;
+        t.amount = editedTx.amount;
+        t.note = editedTx.note;
+        t.updatedAt = now;
+        affected += 1;
+      });
+    }else{
+      state.transactions.push({
+        id:makeTransactionId(),
+        month:targetMonth,
+        method:editedTx.method,
+        category:editedTx.category,
+        amount:editedTx.amount,
+        note:editedTx.note,
+        createdAt:now,
+        updatedAt:now
+      });
+      affected += 1;
+    }
+  }
+  return affected;
+}
+function sameFixedExpenseSeries(base, tx){
+  if(!base || !tx) return false;
+  return isFixedExpenseCategory(tx.category)
+    && normalizedTxText(tx.category) === normalizedTxText(base.category)
+    && normalizedTxText(tx.method) === normalizedTxText(base.method)
+    && Number(tx.amount || 0) === Number(base.amount || 0)
+    && normalizedTxText(tx.note) === normalizedTxText(base.note);
+}
+function deleteIdsForTransaction(id, mode){
+  const base = (state.transactions || []).find(t=>String(t.id)===String(id));
+  if(!base) return [];
+  const baseId = txKey(base.id);
+  if(mode === 'single' || !isFixedExpenseCategory(base.category)) return [baseId];
+  const startIdx = txMonthIndex(base);
+  if(startIdx < 0) return [baseId];
+  const ids = [];
+  (state.transactions || []).forEach(t=>{
+    const mIdx = txMonthIndex(t);
+    if(txKey(t.id) === baseId){
+      ids.push(baseId);
+    }else if(mIdx > startIdx && sameFixedExpenseSeries(base, t)){
+      ids.push(txKey(t.id));
+    }
+  });
+  return uniqueIds(ids);
+}
+
 function confirmDeleteTransaction(id){
   const tx = (state.transactions || []).find(t=>String(t.id)===String(id));
   if(!tx) return;
-  const title = '確認刪除帳目';
-  const message = `確定要刪除這筆帳目嗎？\n\n${MONTH_LABEL(String(tx.month))}｜${tx.category || '未分類'}｜NT$ ${fmt(tx.amount)}${tx.note ? '\n備註：' + tx.note : ''}`;
+  const seriesIds = deleteIdsForTransaction(id, 'series');
+  const count = seriesIds.length || 1;
+  const canDeleteSeries = isFixedExpenseCategory(tx.category) && count > 1;
+  const baseLine = `${MONTH_LABEL(String(tx.month))}｜${tx.category || '未分類'}｜${tx.method || ''}｜NT$ ${fmt(tx.amount)}${tx.note ? '\n備註：' + tx.note : ''}`;
+
+  if(canDeleteSeries){
+    showConfirmDialog({
+      title:'確認刪除固定支出',
+      message:`這筆是固定支出，可以只刪除當月該筆，也可以刪除這一筆與後續月份相同的固定支出，共 ${count} 筆。\n\n${baseLine}`,
+      altText:'只刪除當月該筆',
+      onAlt:function(){ deleteTransaction(id, 'single'); },
+      confirmText:'刪除此筆與後續',
+      onConfirm:function(){ deleteTransaction(id, 'series'); }
+    });
+    return;
+  }
+
   showConfirmDialog({
-    title,
-    message,
+    title:'確認刪除帳目',
+    message:`確定要刪除這筆帳目嗎？\n\n${baseLine}`,
     confirmText:'確認刪除',
-    onConfirm:function(){ deleteTransaction(id); }
+    onConfirm:function(){ deleteTransaction(id, 'single'); }
   });
 }
 
-function deleteTransaction(id){
-  const idx = state.transactions.findIndex(t=>String(t.id)===String(id));
-  if(idx===-1) return;
-  lastDeleted = {item: state.transactions[idx], idx};
-  rememberDeletedTransaction(id);
-  state.transactions.splice(idx,1);
+function deleteTransaction(id, mode){
+  const idsToDelete = deleteIdsForTransaction(id, mode || 'series');
+  if(!idsToDelete.length) return;
+  const deleteSet = new Set(idsToDelete.map(txKey));
+  const removed = [];
+  const remaining = [];
+  (state.transactions || []).forEach((t, idx)=>{
+    if(deleteSet.has(txKey(t.id))) removed.push({item:t, idx});
+    else remaining.push(t);
+  });
+  if(!removed.length) return;
+  lastDeleted = {items: removed};
+  idsToDelete.forEach(rememberDeletedTransaction);
+  state.transactions = remaining;
   render();
-  showSnackbar('已刪除帳目', true);
-  pushNotify('已刪除一筆帳目');
-  queueSaveState({mergeTransactions:true, deletedTransactionIds:[id]}).then(()=>{ if(currentView === 'ledger') render(); });
+  const count = removed.length;
+  showSnackbar(count > 1 ? `已刪除 ${count} 筆固定支出` : '已刪除帳目', true);
+  pushNotify(count > 1 ? `已刪除 ${count} 筆固定支出` : '已刪除一筆帳目');
+  queueSaveState({mergeTransactions:true, deletedTransactionIds:idsToDelete}).then(()=>{ if(currentView === 'ledger') render(); });
 }
 function undoDelete(){
   if(!lastDeleted) return;
-  forgetDeletedTransaction(lastDeleted.item.id);
-  state.transactions.splice(lastDeleted.idx, 0, lastDeleted.item);
-  const revivedId = lastDeleted.item.id;
+  const deletedItems = Array.isArray(lastDeleted.items) ? lastDeleted.items : (lastDeleted.item ? [{item:lastDeleted.item, idx:lastDeleted.idx}] : []);
+  if(!deletedItems.length) return;
+  const revivedIds = deletedItems.map(x=>x.item && x.item.id).filter(Boolean);
+  revivedIds.forEach(forgetDeletedTransaction);
+  deletedItems
+    .slice()
+    .sort((a,b)=>a.idx-b.idx)
+    .forEach(x=>{ state.transactions.splice(Math.min(x.idx, state.transactions.length), 0, x.item); });
   lastDeleted = null;
   render(); hideSnackbar();
-  queueSaveState({mergeTransactions:true, reviveTransactionIds:[revivedId]}).then(()=>{ if(currentView === 'ledger') render(); });
+  queueSaveState({mergeTransactions:true, reviveTransactionIds:revivedIds}).then(()=>{ if(currentView === 'ledger') render(); });
 }
 
 function showSnackbar(text, showUndo){
